@@ -14,7 +14,10 @@
 
 // Prototypes functions //
 int allocate_mem_filter(int***);
-void free_mem_filter(int**);
+int free_mem_filter(int**);
 
-int read_filter(char*,int,int*);
+int read_filter(char*,int,int**);
 int read_user_input(int*,int*,int*,int*,int**);
+
+// Sdi1500195 - Charalambous
+// Sdi1500129 - Petropoulakis

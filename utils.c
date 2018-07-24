@@ -7,23 +7,23 @@ int allocate_mem_filter(int*** filter){
     int i, j;
 
     // Check parameters //
-    if(filter == NULL){
+    if(*filter == NULL){
         printf("Please try again later. NULL pointer(allocate_mem_filter)\n");
         return 1;
     }
-
+    
     // Create 2-d array/image //
     *filter = (int**)malloc(sizeof(int*) * FILTER_SIZE);
     if(*filter == NULL)
         return 1;
 
-    for(i = 0; i< FILTER_SIZE; i++){
-        (*filter[i]) = (int*)malloc(sizeof(int) * FILTER_SIZE);
+    for(i = 0; i < FILTER_SIZE; i++){
         
+        (*filter)[i] = (int*)malloc(sizeof(int) * FILTER_SIZE);
         // Allocation failed, destroy filter //
-        if((*filter[i]) == NULL){
+        if((*filter)[i] == NULL){
             for(j = 0; j < i; j++)
-                free((*filter[i]));
+                free((*filter)[i]);
             free(*filter);
             return 1;
         }
@@ -58,6 +58,7 @@ int free_mem_filter(int** filter){
 int read_filter(char* buff, int buff_size, int** filter){
     int i, count, error = 0;
     char* current_num_str;
+    char* end;
     int current_num;
 
     printf("Please enter the matrix of filter(3 x 3). Seperate lines with enter\n"); 
@@ -79,18 +80,26 @@ int read_filter(char* buff, int buff_size, int** filter){
 
             // Get each integer string//
             current_num_str = strtok(buff, " ");
-            if(token == NULL)
+            if(current_num_str == NULL)
                 error = 1;
           
+            end = &buff[sizeof(current_num_str) - 1];
+
             if(error != 1){
                 // Convert string to integer //
-                current_num = strtol(current_num_str,&buff[sizeof(current_num_str) - 1],10);
+                current_num = strtol(current_num_str,&end,10);
                 
                 // Check if string is an integers //
-                if(buff[sizeof(current_num_str)] == current_num_str)
+                if(end != current_num_str + strlen(current_num_str))
                     error = 1;
-                else
-                    filter[i][count] = current_num; // Valid input - Copy number into matrix
+                else{
+
+                    // Invalid value //
+                    if(current_num < 0 || current_num > FILTER_MAX_VALUE)
+                        error = 1;
+                    else
+                       filter[i][count] = current_num; // Valid input - Copy number into matrix
+                }
             }
 
             // Check if error occured in current line //
@@ -155,6 +164,8 @@ int read_user_input(int* image_type, int* image_width, int* image_height, int* i
         
         // Check imput - read int //
         while(end != buff + strlen(buff)){
+
+            // Read line //
             if(!fgets(buff,sizeof(buff),stdin)){
                 printf("Please try again later. Fgets error(read_user_input)\n");
                 return 1;
@@ -224,4 +235,5 @@ int read_user_input(int* image_type, int* image_width, int* image_height, int* i
     return error;
 }
 
-
+// Sdi1500195 - Charalambous
+// Sdi1500129 - Petropoulakis
