@@ -13,3 +13,4 @@ Helpful Links:
 make
 
 # Run
+./filter
