@@ -1,6 +1,5 @@
 /***********************************/
 /* utils.h */
-
 /* Editors: Panagiotis Petropoulakis
  *          Andreas Charalampous
  *
@@ -31,17 +30,17 @@
 /*  Allocates space for a 2D array that represents the filter. Uses */
 /*  the FILTER_SIZE definition to determine the size of array.      */
 /*  Returns 0, else -1 in case of failure                           */
-int allocate_mem_filter(int***);
+int allocate_mem_filter(double***);
 
 /*  Unallocates the space reserved of the given 2d array. Returns   */
 /*  0, else -1 in case of failure                                   */
-int free_mem_filter(int**);
+int free_mem_filter(double**);
 
 /*  Gets the filter of convolution. Given an already allocated array    */
 /*  scans from stdin the filter line by line. When the line is given    */
 /*  all integers are seperated and are put in filter. In case of        */
 /*  error, the line is rescanned.                                       */
-int read_filter(int**);
+int read_filter(double**);
 
 /*  NOT FULLY CHECKED. LOOKS OKAY   */
-int read_user_input(int*,int*,int*,int*,int**);
+int read_user_input(int*,int*,int*,int*,double**);

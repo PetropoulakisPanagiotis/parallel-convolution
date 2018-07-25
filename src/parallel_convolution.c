@@ -1,6 +1,5 @@
 /***********************************/
 /* paraller_convolution.h */
-
 /* Editors: Panagiotis Petropoulakis
  *          Andreas Charalampous
  *
@@ -17,7 +16,7 @@
 
 int main(void){
     int image_type, image_width, image_height, image_seed;
-    int **filter;
+    double **filter;
     int error;
     //int comm_size, my_rank;
 
@@ -28,8 +27,10 @@ int main(void){
 
     // Read parameters of program //
     error = read_user_input(&image_type,&image_width,&image_height,&image_seed,filter);
-    if(error != 0)
+    if(error != 0){
+        free_mem_filter(filter);
         return error;
+    }
 
     //printf("image_type: %d\nimage_width: %d\nimage_height: %d\nimage_seed: %d\n", image_type,image_width,image_height,image_seed);
     /*
@@ -43,13 +44,6 @@ int main(void){
 
     MPI_Finalize();
 */
-    printf("GIVEN FILTER: \n");
-    for(int i = 0; i < FILTER_SIZE; i++){
-        for(int j = 0; j < FILTER_SIZE; j++){
-            printf("%d ",filter[i][j]);
-        }
-        puts("");
-    }
 
     error = free_mem_filter(filter);
     if(error != 0)
