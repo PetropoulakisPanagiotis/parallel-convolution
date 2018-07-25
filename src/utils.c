@@ -10,6 +10,11 @@
  *          sdi1500195@di.uoa.gr
  */
 /***********************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
+
 #include "utils.h"
 
 /*  Implementations of all functions that are defined in utils.h */
@@ -37,13 +42,13 @@ int allocate_mem_filter(double*** filter){
         if((*filter)[i] == NULL){ /* Error while allocating space */
             for(j = 0; j < i; j++)
                 free((*filter)[i]);
-            
+
             free(*filter);
             return -1;
         }
     } /* End for */
 
-    return 0; 
+    return 0;
 }
 
 /* De-allocate memory of filter */
@@ -63,17 +68,18 @@ int free_mem_filter(double** filter){
 
     free(filter);
 
-    return 0; 
+    return 0;
 }
 
 /* Read filter from the user */
 /* Success: 0                */
 /* Failure: -1               */
 int read_filter(double** filter){
-    char* num; /* Seperating values from input */
-    size_t buff_size = 50; /* For getline */
-    char* line; /* For getline */
+    char* num; // Seperating values from input
+    size_t buff_size = 50; // For getline
+    char* line; // For getline
     int i, j, error;
+    int sum = 0; // sum of filter values for normalization
 
     /* Allocate memory for line buffer */
     line = malloc(sizeof(char) * buff_size);
@@ -84,6 +90,7 @@ int read_filter(double** filter){
 
     /* Scan filter, receive one line each time */
 	for(i = 0; i < FILTER_SIZE; i++){
+        int line_sum = 0; // sum of current line's integers
 
 		error = getline(&line, &buff_size,stdin);
         if(error == -1){
@@ -95,7 +102,7 @@ int read_filter(double** filter){
 		num = strtok(line," \n\t"); /* Get first number */
 
         j = 0; /* Count number of integers scanned from input */
-		
+
         while(j < FILTER_SIZE){ /* Get all integers */
 
             /* Atoi on error returns 0, so we avoid the case when 0 is found */
@@ -104,14 +111,16 @@ int read_filter(double** filter){
                 filter[i][j] = (double)0;
             else{
                 filter[i][j] = (double)atoi(num);
-                if(filter[i][j] == 0) /* If true, invalid value was given */
+                if(filter[i][j] == (double)0) /* If true, invalid value was given */
                     break;
             }
+
+            line_sum += (int)filter[i][j];
 
 			num = strtok(NULL," \n\t"); /* Get the next number */
 			if(num == NULL)
 				break;
-            
+
             j++;
 		} /* End while */
 
@@ -120,16 +129,28 @@ int read_filter(double** filter){
             printf("Invalid values given. Give line again\n");
 			i--;
 		}
+        else
+            sum += line_sum; // line was valid, add sum
 	} /* End for */
 
     printf("GIVEN FILTER: \n");
     for(int i = 0; i < FILTER_SIZE; i++){
         for(int j = 0; j < FILTER_SIZE; j++){
             printf("%d ",(int)filter[i][j]);
+            if(sum != 0 && sum != 1) // WILL CHANGE LATER, JUST FOR PRINTING
+                filter[i][j] /= (float)sum;
         }
         puts("");
     }
-    
+
+    printf("NORMALIZED FILTER: \n");
+    for(int i = 0; i < FILTER_SIZE; i++){
+        for(int j = 0; j < FILTER_SIZE; j++){
+            printf("%f ",filter[i][j]);
+        }
+        puts("");
+    }
+
     free(line);
 
     return 0;
