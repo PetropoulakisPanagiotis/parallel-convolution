@@ -20,3 +20,6 @@ make
 
 # Run
 mpicc -n 4 ./filter
+
+# Data division
+![alt text](https://raw.githubusercontent.com/PetropoulakisPanagioti/parallel_convolution/master/images/1.png)
