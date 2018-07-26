@@ -56,7 +56,7 @@ int main(void){
 
         error = read_user_input(&image_type,&image_width,&image_height,&image_seed,filter);
         if(error != 0)
-            return error;
+            MPI_Abort(MPI_COMM_WORLD);
         
         /* Copy arguments in our new type */ 
         my_args.image_type = image_type;
