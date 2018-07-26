@@ -13,4 +13,4 @@ Helpful Links:
 make
 
 # Run
-./filter
+mpicc -n 4 ./filter
