@@ -34,3 +34,5 @@ epidi eine se omades se kathe loop briskis oria gia 3 diergasies.
 to width paei an +1 eno to height ana 3 an milame gia 9 processes. 
 Stin arxi xorizete to width se 3 stiles as poume kai kathe stili exi 3 processes pou exoun to idio width
 
+Note: Mallon afto tha to kanei i master diergasia kai meta tha ta pirazei sta processes. Ara kathe prosees me to id tis kserei na kanei
+access stous 4 pinakes ton orion
