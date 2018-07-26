@@ -19,13 +19,13 @@ for(i = 0; i < sqrt(processes); i++){
   
   # Find height #
  if(i < remain_width){
-    my_width[i,i+1,i+2] = tmp + 1;
+    my_height[i,i + (i + 1)sqrt(processes),i + (i + 2)sqrt(processes)] = tmp + 1;
     my_width_start[i,i + (i + 1)sqrt(processes),i + (i + 2)sqrt(processes)] = i * (tmp + 1);
-    remain_width--;
+    remain_height--;
   }
   else{
-    my_width[i,i+1,i+2] = tmp;
-    my_width_start = i * tmp;
+    my_height[i,i + (i + 1)sqrt(processes),i + (i + 2)sqrt(processes)] = tmp;
+    my_height_start[i,i + (i + 1)sqrt(processes),i + (i + 2)sqrt(processes)] = i * tmp;
   }
 }
 
