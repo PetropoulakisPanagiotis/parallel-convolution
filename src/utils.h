@@ -19,24 +19,21 @@
 #define FILTER_SIZE 3 // 3 x 3 -> Must not be changed
 #define FILTER_MAX_VALUE 10 // Max value for filter
 
+/* Arguments struct for each mpi process */
+typedef struct Args_type{
+    int image_type, image_width, image_height, image_seed;
+    double filter[FILTER_SIZE][FILTER_SIZE];
+}Args_type; 
+
 /*  Header file for all variant functions and structs used
  *  to complete the Parallel Convolution application.
  */
-
-/*  Allocates space for a 2D array that represents the filter. Uses */
-/*  the FILTER_SIZE definition to determine the size of array.      */
-/*  Returns 0, else -1 in case of failure                           */
-int allocate_mem_filter(double***);
-
-/*  Unallocates the space reserved of the given 2d array. Returns   */
-/*  0, else -1 in case of failure                                   */
-int free_mem_filter(double**);
 
 /*  Gets the filter of convolution. Given an already allocated array    */
 /*  scans from stdin the filter line by line. When the line is given    */
 /*  all integers are seperated and are put in filter. In case of        */
 /*  error, the line is rescanned.                                       */
-int read_filter(double**);
+int read_filter(double[FILTER_SIZE][FILTER_SIZE]);
 
 /*  NOT FULLY CHECKED. LOOKS OKAY   */
-int read_user_input(int*,int*,int*,int*,double**);
+int read_user_input(int*,int*,int*,int*,double[FILTER_SIZE][FILTER_SIZE]);

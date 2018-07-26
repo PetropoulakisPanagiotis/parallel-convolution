@@ -14,36 +14,29 @@
 #include <mpi.h>
 #include "utils.h"
     
-typedef struct arguments{
-    int image_type, image_width, image_height, image_seed;
-    double filter[FILTER_SIZE][FILTER_SIZE];
-}arguments; 
-
 int main(void){
-    MPI_Datatype args_type, oldtypes[2], filter_type;
+    MPI_Datatype args_type, oldtypes[2], filter_type; /* Define new types */
     MPI_Status stat;
-    MPI_Aint offsets[2], extent;
-    arguments my_args;
-    int error;
-    int comm_size, my_rank, source=0, dest, tag;
+    MPI_Aint offsets[2], extent; /* For derived types */
+    Args_type my_args; /* Arguments for current process */
+    int comm_size, my_rank, tag, error;
     int block_counts[2];
 
-
+    /* Initialize MPI environment - Get number of processes etc. */
     MPI_Init(NULL,NULL);
     MPI_Comm_size(MPI_COMM_WORLD,&comm_size);
     MPI_Comm_rank(MPI_COMM_WORLD,&my_rank);
 
-
-    // Define 2-d filter in contiguous derived type //
+    /* Define in contiguous derived type - use it for filter */
     MPI_Type_contiguous(FILTER_SIZE,MPI_DOUBLE,&filter_type);
     MPI_Type_commit(&filter_type);
     
-    // Setup description of 4 MPI_INT fields - for arguments //
+    /* Setup description of 4 MPI_INT fields - for arguments */
     offsets[0] = 0;
     oldtypes[0] = MPI_INT;
     block_counts[0] = 4;
 
-    // Find offset //
+    // Find offset of MPI_INIT //
     MPI_Type_extent(MPI_INT,&extent);
     
     // Setup description of 2-d filter - use filter_type //
@@ -51,28 +44,21 @@ int main(void){
     oldtypes[1] = filter_type;
     block_counts[1] = FILTER_SIZE; // 3 X 3 
 
+    /* Define structure type and commit it*/
     MPI_Type_struct(2,block_counts,offsets,oldtypes,&args_type);
     MPI_Type_commit(&args_type);
 
+    /* Read from user the input and share arguments among all processes */
     if(my_rank == 0){
         int image_type, image_width, image_height, image_seed;
-        double **filter;
+        double filter[FILTER_SIZE][FILTER_SIZE];
         int i,j;
 
-        // Create filter //
-        error = allocate_mem_filter(&filter);
+        error = read_user_input(&image_type,&image_width,&image_height,&image_seed,filter);
         if(error != 0)
             return error;
-
-        // Read parameters of program //
-        error = read_user_input(&image_type,&image_width,&image_height,&image_seed,filter);
-        if(error != 0){
-            free_mem_filter(filter);
-            return error;
-        }
         
-        // Copy arguments //
-        
+        /* Copy arguments in our new type */ 
         my_args.image_type = image_type;
         my_args.image_width = image_width;
         my_args.image_height = image_height;
@@ -80,22 +66,19 @@ int main(void){
         
         for(i = 0; i < FILTER_SIZE; i++)
             for(j = 0; j < FILTER_SIZE; j++)
-                my_args.filter[i][j] = filter[i][j];
-        
-        error = free_mem_filter(filter);
-        if(error != 0)
-            return error;
+                my_args.filter[i][j] = filter[i][j];   
     }
 
+    /* Share arguments */
     MPI_Bcast(&my_args,1,args_type,0,MPI_COMM_WORLD);
-    
+   
     printf("%d\n",my_args.image_width);
 
-    // Realse resources //
+    /* Deallocate data types */
     MPI_Type_free(&filter_type);
     MPI_Type_free(&args_type);
 
-    // Terminate mpi processes //
+    /* Terminate MPI execution */
     MPI_Finalize();
 
     return 0;

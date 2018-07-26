@@ -19,62 +19,10 @@
 
 /*  Implementations of all functions that are defined in utils.h */
 
-/* Allocate memory for filter */
-/* Success: 0                 */
-/* Failure: -1                */
-int allocate_mem_filter(double*** filter){
-    int i, j;
-
-    /* Check given parameter */
-    if(*filter == NULL){
-        printf("Please try again later. NULL pointer(allocate_mem_filter)\n");
-        return -1;
-    }
-
-    /* Create 2-d array/image (array of pointers to rows) */
-    *filter = (double**)malloc(sizeof(double*) * FILTER_SIZE);
-    if(*filter == NULL)
-        return -1;
-
-    for(i = 0; i < FILTER_SIZE; i++){ /* Create all rows */
-
-        (*filter)[i] = (double*)malloc(sizeof(double) * FILTER_SIZE);
-        if((*filter)[i] == NULL){ /* Error while allocating space */
-            for(j = 0; j < i; j++)
-                free((*filter)[i]);
-
-            free(*filter);
-            return -1;
-        }
-    } /* End for */
-
-    return 0;
-}
-
-/* De-allocate memory of filter */
-/* Success: 0                   */
-/* Failure: -1                  */
-int free_mem_filter(double** filter){
-    int i;
-
-    /* Check parameters */
-    if(filter == NULL){
-        printf("Please try again later. NULL pointer(free_mem_filter)\n");
-        return -1;
-    }
-
-    for(i = 0; i < FILTER_SIZE; i++)
-        free(filter[i]);
-
-    free(filter);
-
-    return 0;
-}
-
 /* Read filter from the user */
 /* Success: 0                */
 /* Failure: -1               */
-int read_filter(double** filter){
+int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
     char* num; // Seperating values from input
     size_t buff_size = 50; // For getline
     char* line; // For getline
@@ -159,7 +107,7 @@ int read_filter(double** filter){
 /* Read parameters for the program */
 /* Success: 0                      */
 /* Failure: 1                      */
-int read_user_input(int* image_type, int* image_width, int* image_height, int* image_seed, double** filter){
+int read_user_input(int* image_type, int* image_width, int* image_height, int* image_seed, double filter[FILTER_SIZE][FILTER_SIZE]){
     int error = 0;
     int i = 0, input;
     char buff[LINE_MAX];
