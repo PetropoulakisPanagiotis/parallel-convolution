@@ -13,3 +13,4 @@
 * virtual topology -> cartesian
 * check - valgrind
 * readme
+!!! <- abort when user enters non perfect square processes
