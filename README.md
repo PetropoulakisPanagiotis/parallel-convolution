@@ -22,4 +22,4 @@ make
 mpicc -n 4 ./filter
 
 # Data division
-![alt text](https://raw.githubusercontent.com/PetropoulakisPanagioti/parallel_convolution/master/images/1.png)
+![alt text](https://github.com/PetropoulakisPanagiotis/parallel_convolution/blob/master/images/1.png)
