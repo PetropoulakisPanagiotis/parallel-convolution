@@ -1,0 +1,15 @@
+* size of array
+* find neighbours / use NULL_MPI_process
+* hallow points
+* fill arrays with random numbers
+* fix custom types -> for neighbours before isend (collumns, vectors etc)
+* waitAll
+* wait any / May use this and wait all not be tested
+* check when computations are done -> print results/ master
+* use timers()
+* inline functions
+* init, start before isend, receive 
+* openMp
+* virtual topology -> cartesian
+* check - valgrind
+* readme
