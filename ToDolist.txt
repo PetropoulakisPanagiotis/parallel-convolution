@@ -1,16 +1,23 @@
-* size of array
-* find neighbours / use NULL_MPI_process
+* size of array -> debug 
+* find neighbours / use NULL_MPI_process(etsi den stelnonte ta isend)
 * hallow points
-* fill arrays with random numbers
-* fix custom types -> for neighbours before isend (collumns, vectors etc)
-* waitAll
-* wait any / May use this and wait all not be tested
-* check when computations are done -> print results/ master
-* use timers()
-* inline functions
-* init, start before isend, receive 
+* fill arrays with random numbers(seed klp)
+* fix custom types -> for neighbours before isend (collumns, vectors etc). Δηλαδή ομαδοποίηση για ελαχιστοπίηση μυνημάτων όπως arguments
+* wait any -> το waitall να μην το δοκιμασούμε καν πάμε στο any που είναι πιο γρήγορο
+* check when computations are done -> print results/ master. Με λίγα λόγια πότε υπάρχει σύγκλιση και είναι σταθερή η εικόνα.
+* use timers() -> έχει στα αρχεία του Pacheco ένα .h με μια συνάρτηση να το χρησιμοποιήσουμε
+* inline functions -> μεταγλωτιστής κλπ + makefile
+* init, start before isend, receive καλύτερα να γίνει μετά είναι κάτι μικρό και δεν αξίζει πριν λυθούν τα παραπάνω
+===========================================================================================================================================
+Γενικά τα παραπάνω βγαίνουμε με τον κώδικα που έφτιαξα σε παρόμοια λογική μερικά θέλουν συζήτηση που θα μιλήσουμε.
+Στην συνέχεια μόλις βγει και το openMP + virtual topology θα προσέξουμε γενικά Ifs, υπολογισμούς κλπ για να έχουμε καλό
+παράλληλο πρόγραμμα και να μην κάνουμε έξτρα πράγματα κλπ.
+
 * openMp
-* virtual topology -> cartesian
+* virtual topology -> cartesian last improvement
 * check - valgrind
 * readme
-!!! <- abort when user enters non perfect square processes
+!!! <- Abort when user enters non perfect square processes, when error occured abort. 
+
+Γενικά διάβασα ότι το mpi δεν είναι σαν την c και πχ αν αποτύχει μια συνάρτηση γενικά τερματίζει το πρόγραμμα όποτε συνήθως σε 
+functions MPI_ το να ελέγεις για success δεν έχει νόημα πολύ μόνο στις c-like συναρτήσεις.
