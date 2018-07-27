@@ -23,6 +23,8 @@
 typedef struct Args_type{
     int image_type, image_width, image_height, image_seed;
     double filter[FILTER_SIZE][FILTER_SIZE];
+    int my_data_width_start, my_data_width_end;
+    int my_data_height_start, my_data_height_end;
 }Args_type; 
 
 /*  Header file for all variant functions and structs used
