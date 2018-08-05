@@ -19,17 +19,18 @@
 #define FILTER_SIZE 3 // 3 x 3 -> Must not be changed
 #define FILTER_MAX_VALUE 10 // Max value for filter
 
-/* Arguments struct for each mpi process */
-typedef struct Args_type{
-    int image_type, image_width, image_height, image_seed;
-    double filter[FILTER_SIZE][FILTER_SIZE];
-    int my_data_width_start, my_data_width_end;
-    int my_data_height_start, my_data_height_end;
-}Args_type; 
-
 /*  Header file for all variant functions and structs used
  *  to complete the Parallel Convolution application.
  */
+
+
+ /* Arguments struct for each mpi process */
+ typedef struct Args_type{
+     int image_type, image_width, image_height, image_seed;
+     double filter[FILTER_SIZE][FILTER_SIZE];
+     int width_per_process, width_remaining;
+     int height_per_process, height_remaining;
+ }Args_type;
 
 /*  Gets the filter of convolution. Given an already allocated array    */
 /*  scans from stdin the filter line by line. When the line is given    */
