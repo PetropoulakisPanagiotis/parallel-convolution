@@ -19,7 +19,7 @@ Helpful Links:
 make
 
 # Run
-mpicc -n 4 ./filter
+mpiexec -n 4 ./filter
 
 # Data division
 ![alt text](https://github.com/PetropoulakisPanagiotis/parallel_convolution/blob/master/images/1.png)
