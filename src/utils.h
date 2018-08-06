@@ -13,11 +13,12 @@
 #pragma once
 
 /* Definitions */
-#define MAX_WIDTH 1000 // Max width of pictures
-#define MAX_HEIGHT 1000 // Max Height of pictures
+#define MAX_WIDTH 3500 // Max width of pictures
+#define MAX_HEIGHT 3500 // Max Height of pictures
 #define MAX_SEED 50 // For randomly generated pictures
 #define FILTER_SIZE 3 // 3 x 3 -> Must not be changed
 #define FILTER_MAX_VALUE 10 // Max value for filter
+#define FILTER_MIN_VALUE -10
 
 /*  Header file for all variant functions and structs used
  *  to complete the Parallel Convolution application.
@@ -39,4 +40,4 @@
 int read_filter(double[FILTER_SIZE][FILTER_SIZE]);
 
 /*  NOT FULLY CHECKED. LOOKS OKAY   */
-int read_user_input(int*,int*,int*,int*,double[FILTER_SIZE][FILTER_SIZE]);
+int read_user_input(Args_type*, int procs_per_line);

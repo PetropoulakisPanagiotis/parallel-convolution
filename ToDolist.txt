@@ -1,7 +1,7 @@
-* size of array -> debug 
-* find neighbours / use NULL_MPI_process(etsi den stelnonte ta isend)
-* hallow points
-* fill arrays with random numbers(seed klp)
+√ size of array -> debug
+√ find neighbours / use NULL_MPI_process(etsi den stelnonte ta isend)
+√ hallow points
+√ fill arrays with random numbers(seed klp)
 * fix custom types -> for neighbours before isend (collumns, vectors etc). Δηλαδή ομαδοποίηση για ελαχιστοπίηση μυνημάτων όπως arguments
 * wait any -> το waitall να μην το δοκιμασούμε καν πάμε στο any που είναι πιο γρήγορο
 * check when computations are done -> print results/ master. Με λίγα λόγια πότε υπάρχει σύγκλιση και είναι σταθερή η εικόνα.
@@ -18,7 +18,20 @@
 * virtual topology -> cartesian last improvement
 * check - valgrind
 * readme
-!!! <- Abort when user enters non perfect square processes, when error occured abort. 
+√!!! <- Abort when user enters non perfect square processes, when error occured abort.
 
-Γενικά διάβασα ότι το mpi δεν είναι σαν την c και πχ αν αποτύχει μια συνάρτηση γενικά τερματίζει το πρόγραμμα όποτε συνήθως σε 
+Γενικά διάβασα ότι το mpi δεν είναι σαν την c και πχ αν αποτύχει μια συνάρτηση γενικά τερματίζει το πρόγραμμα όποτε συνήθως σε
 functions MPI_ το να ελέγεις για success δεν έχει νόημα πολύ μόνο στις c-like συναρτήσεις.
+
+
+
+===========================================================================================================================================
+
+√ NULL_MPI_process.
+√ Αλλαγή της read_input():
+   √ Θα δίνεται το Args_type σαν παράμετρος.
+   √ Ο αριθμός των διεργασιών πρέπει να είναι τέλειο τετράγωνο.
+   √ Το ύψος και πλάτος πρέπει να είναι μεγαλύτερα ή ίσα της sqrt(comm_size).
+-> Φτιάξιμο extra στηλών-γραμμών για γειτονικά.
+-> Εύρεση πώς θα κάνουμε τα hallow points.
+-> Memory allocations and errors(valgrind).

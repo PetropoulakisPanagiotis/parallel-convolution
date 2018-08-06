@@ -34,7 +34,7 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
     if(line == NULL)
         return -1;
 
-    printf("Please enter the matrix of filter(%d x %d). Seperate lines with enter\n",FILTER_SIZE,FILTER_SIZE);
+    printf("Please enter the matrix of filter(%d x %d). Seperate lines with enter\n", FILTER_SIZE,FILTER_SIZE);
 
     /* Scan filter, receive one line each time */
 	for(i = 0; i < FILTER_SIZE; i++){
@@ -59,7 +59,7 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
                 filter[i][j] = (double)0;
             else{
                 filter[i][j] = (double)atoi(num);
-                if(filter[i][j] == (double)0) /* If true, invalid value was given */
+                if(filter[i][j] == (double)0 || filter[i][j] > FILTER_MAX_VALUE || filter[i][j] < FILTER_MIN_VALUE) /* If true, invalid value was given */
                     break;
             }
 
@@ -107,19 +107,19 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
 /* Read parameters for the program */
 /* Success: 0                      */
 /* Failure: 1                      */
-int read_user_input(int* image_type, int* image_width, int* image_height, int* image_seed, double filter[FILTER_SIZE][FILTER_SIZE]){
+int read_user_input(Args_type* args, int procs_per_line){
     int error = 0;
-    int i = 0, input;
+    int i, input;
     char buff[LINE_MAX];
     char *end;
 
-    /* Check parameters */
-    if(image_type == NULL || image_width == NULL || image_height == NULL || image_seed == NULL || filter == NULL){
+    /* Check pointer given */
+    if(args == NULL){
         printf("Please try again later. NULL pointer(read_user_input)\n");
         return 1;
     }
 
-    printf("Welcome in parallel convolution program.\n\n");
+    printf("Welcome to parallel convolution program.\n\n");
     printf("----------------------------------------\n\n");
 
     /* Read input */
@@ -175,34 +175,34 @@ int read_user_input(int* image_type, int* image_width, int* image_height, int* i
                         end = NULL; /* Reset end */
                     }
                     else
-                        *image_type = input;
+                        args->image_type = input;
                     break;
 
                 case 1:
-                    if(end != buff + strlen(buff) || input < 0 || input > MAX_WIDTH){
-                        printf("Please enter valid value for image width(positive and up to %d pixels):",MAX_WIDTH);
+                    if(end != buff + strlen(buff) || input < procs_per_line || input > MAX_WIDTH){
+                        printf("Please enter valid value for image width(equal or greater than %d and up to %d pixels):", procs_per_line, MAX_WIDTH);
                         end = NULL;
                     }
                     else
-                        *image_width = input;
+                        args->image_width = input;
                     break;
 
                 case 2:
-                    if(end != buff + strlen(buff) || input < 0 || input > MAX_HEIGHT){
-                        printf("Please enter valid value for image height(positive and up to %d pixels):",MAX_HEIGHT);
+                    if(end != buff + strlen(buff) || input < procs_per_line || input > MAX_HEIGHT){
+                        printf("Please enter valid value for image height(equal or greater than %d and up to %d pixels):", procs_per_line, MAX_HEIGHT);
                         end = NULL;
                     }
                     else
-                        *image_height = input;
+                        args->image_height = input;
                     break;
 
                 case 3:
                     if(end != buff + strlen(buff) || input < 0 || input > MAX_SEED){
-                        printf("Please enter valid value for seed(positive and up to %d):",MAX_SEED);
+                        printf("Please enter valid value for seed(positive and up to %d):", MAX_SEED);
                         end = NULL;
                     }
                     else
-                        *image_seed = input;
+                        args->image_seed = input;
                     break;
             } /* End switch */
         } // End while
@@ -212,7 +212,7 @@ int read_user_input(int* image_type, int* image_width, int* image_height, int* i
     } /* End for */
 
     /* Read filter */
-    error = read_filter(filter);
+    error = read_filter(args->filter);
 
     return error;
 }

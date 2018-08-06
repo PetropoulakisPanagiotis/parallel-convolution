@@ -28,6 +28,16 @@ int main(void){
     MPI_Comm_size(MPI_COMM_WORLD,&comm_size);
     MPI_Comm_rank(MPI_COMM_WORLD,&my_rank);
 
+    int procs_per_line = (int)sqrt(comm_size); // number of processes in each row/column
+
+    /* Check if perfect square number of processes was provided */
+    if(my_rank == 0){
+        if(procs_per_line * procs_per_line != comm_size){ // not perfect square
+            printf("Invalid number of processes given. Must be perfect square: 1, 4, 9, 16,...\n");
+            MPI_Abort(MPI_COMM_WORLD, -1);
+        }
+    }
+
     /* Define in contiguous derived type - use it for filter */
     MPI_Type_contiguous(FILTER_SIZE, MPI_DOUBLE, &filter_type1); // 3x1
     MPI_Type_commit(&filter_type1);
@@ -57,29 +67,24 @@ int main(void){
 
     /* Read from user the input and share arguments among all processes */
     if(my_rank == 0){
-        int image_type, image_width, image_height, image_seed;
-        double filter[FILTER_SIZE][FILTER_SIZE];
-        int i,j;
 
-        error = read_user_input(&image_type,&image_width,&image_height,&image_seed,filter);
+        int i;
+
+        error = read_user_input(&my_args, procs_per_line);
         if(error != 0)
             MPI_Abort(MPI_COMM_WORLD,error);
 
-        /* Copy arguments in new type */
-        my_args.image_type = image_type;
-        my_args.image_width = image_width;
-        my_args.image_height = image_height;
-        my_args.image_seed = image_seed;
+        /* Calculate remaining arguments */
+        my_args.width_per_process = my_args.image_width / (int)sqrt(comm_size);
+        my_args.width_remaining = my_args.image_width % (int)sqrt(comm_size);
+        my_args.height_per_process = my_args.image_height / (int)sqrt(comm_size);
+        my_args.height_remaining = my_args.image_height % (int)sqrt(comm_size);
 
-        my_args.width_per_process = image_width / (int)sqrt(comm_size);
-        my_args.width_remaining = image_width % (int)sqrt(comm_size);
-        my_args.height_per_process = image_height / (int)sqrt(comm_size);
-        my_args.height_remaining = image_height % (int)sqrt(comm_size);
-
-        /* Copy filter to send */
-        for(i = 0; i < FILTER_SIZE; i++)
-            for(j = 0; j < FILTER_SIZE; j++)
-                my_args.filter[i][j] = filter[i][j];
+        printf("{0}t: %d, w:%d, h:%d, s:%d\nF:%lf %lf %lf %lf %lf %lf %lf %lf %lf\nwp: %d, wr: %d, hp: %d, hr: %d\n",
+        my_args.image_type,my_args.image_width,my_args.image_height,my_args.image_seed,
+        my_args.filter[0][0],my_args.filter[0][1],my_args.filter[0][2],my_args.filter[1][0],my_args.filter[1][1],
+        my_args.filter[1][2],my_args.filter[2][0],my_args.filter[2][1],my_args.filter[2][2],my_args.width_per_process,
+        my_args.width_remaining, my_args.height_per_process, my_args.height_remaining);
 
         for(i = 1; i < comm_size; i++) // share to all
             MPI_Send(&my_args, 1, args_type, i, 1, MPI_COMM_WORLD);
@@ -87,6 +92,12 @@ int main(void){
     else{
         /* Get arguments from process 0*/
         MPI_Recv(&my_args, 1, args_type, 0, 1, MPI_COMM_WORLD, &stat);
+        printf("{%d}t: %d, w:%d, h:%d, s:%d\nF:%lf %lf %lf %lf %lf %lf %lf %lf %lf\nwp: %d, wr: %d, hp: %d, hr: %d\n",
+        my_rank,my_args.image_type,my_args.image_width,my_args.image_height,my_args.image_seed,
+        my_args.filter[0][0],my_args.filter[0][1],my_args.filter[0][2],my_args.filter[1][0],my_args.filter[1][1],
+        my_args.filter[1][2],my_args.filter[2][0],my_args.filter[2][1],my_args.filter[2][2],my_args.width_per_process,
+        my_args.width_remaining, my_args.height_per_process, my_args.height_remaining);
+
     }
 
     /* For the next step we must find the 8 neighbours of the current process */
@@ -101,7 +112,6 @@ int main(void){
     /* (occupying cells at the edges) */
 
     int neighbours[8]; // all neighbours of process
-    int procs_per_line = (int)sqrt(comm_size); // number of processes in each row/column
 
     /*
        0 1 2
@@ -122,49 +132,49 @@ int main(void){
     if(column_id != 0) // if not on top of image
         neighbours[0] = my_rank - procs_per_line;
     else
-        neighbours[0] = -1; // no neighbour from North
+        neighbours[0] = MPI_PROC_NULL; // no neighbour from North
 
     /* [NE]North-East Neighbour (1) */
     if(column_id != 0 && row_id != procs_per_line - 1) // if not on right up corner
         neighbours[1] = my_rank - procs_per_line + 1;
     else
-        neighbours[1] = -1;
+        neighbours[1] = MPI_PROC_NULL;
 
     /* [E]East Neighbour (2) */
     if(row_id != procs_per_line - 1) // if not on the right edge
         neighbours[2] = my_rank + 1;
     else
-        neighbours[2] = -1;
+        neighbours[2] = MPI_PROC_NULL;
 
     /* [SE]South-East Neighbour (3) */
     if(column_id != procs_per_line - 1 && row_id != procs_per_line - 1) // if not on the right down corner
         neighbours[3] = my_rank + procs_per_line + 1;
     else
-        neighbours[3] = -1;
+        neighbours[3] = MPI_PROC_NULL;
 
     /* [S]South Neighbour (4) */
     if(column_id != procs_per_line - 1) // if not on bottom of image
         neighbours[4] = my_rank + procs_per_line;
     else
-        neighbours[4] = -1; // no neighbour from South
+        neighbours[4] = MPI_PROC_NULL; // no neighbour from South
 
     /* [SW]South-West Neighbour (5) */
     if(column_id != procs_per_line -1 && row_id != 0) // if not on left down corner
         neighbours[5] = my_rank + procs_per_line - 1;
     else
-        neighbours[5] = -1;
+        neighbours[5] = MPI_PROC_NULL;
 
     /* [W]West Neighbour (6) */
     if(row_id != 0) // if not on the left edge
         neighbours[6] = my_rank - 1;
     else
-        neighbours[6] = -1;
+        neighbours[6] = MPI_PROC_NULL;
 
     /* [NW]North-West Neighbour (7) */
     if(row_id != 0 && column_id != 0) // if not on left up corner
         neighbours[7] = my_rank - procs_per_line - 1;
     else
-        neighbours[7] = -1;
+        neighbours[7] = MPI_PROC_NULL;
 
     printf("[%d]{%d,%d} %d %d %d %d %d %d %d %d\n\n",my_rank,row_id,column_id,
                                                      neighbours[0],
