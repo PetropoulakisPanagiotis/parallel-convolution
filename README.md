@@ -1,3 +1,4 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 # Parallel Convolution
 
 Program generates random image and then perform convolution with a given filter(x times) <br /> 
