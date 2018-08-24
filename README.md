@@ -12,6 +12,8 @@ Notes:
 * Given number of processes must be a perfect square (For image division)
 
 ## Prerequisites
+* MPI-3 <br />
+Instructions: https://www.mpich.org/static/downloads/3.2.1/mpich-3.2.1-userguide.pdf
 
 ## Compilation/Run
 1. make
@@ -21,3 +23,7 @@ Notes:
 1. http://matlabtricks.com/post-5/3x3-convolution-kernels-with-online-demo
 2. http://setosa.io/ev/image-kernels/
 3. https://docs.gimp.org/en/plug-in-convmatrix.html
+
+## Authors
+* Petropoulakis Panagiotis petropoulakispanagiotis@gmail.com
+* Andreas Charalambous and.charalampous@gmail.com
