@@ -16,11 +16,9 @@ Helpful Links:
 * http://setosa.io/ev/image-kernels/
 * https://docs.gimp.org/en/plug-in-convmatrix.html
 
-# Compilation
-make
-
-# Run
-mpiexec -n 4 ./filter
+# Compilation/Run
+1. make
+2. mpiexec -n 4 ./filter
 
 # Data division
 ![alt text](https://github.com/PetropoulakisPanagiotis/parallel_convolution/blob/master/images/1.png)
