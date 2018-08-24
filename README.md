@@ -2,6 +2,9 @@
 # Parallel Convolution with random image
 ![alt text](https://i1.wp.com/jeanvitor.com/wp-content/uploads/2017/07/6zX2c.png?w=364&ssl=1) <br />
 A Random image is generated and then convolution is performed with a given filter. Convolution can be performed many times(based in user-input)  <br /> 
+
+## How It Works
+A Random image is generated and then convolution is performed with a given filter. Convolution can be performed many times(based in user-input)  <br /> 
 Notes:
 * Filter = 3 X 3 (can not be changed)
 * Given filter will be normalized
@@ -19,8 +22,6 @@ Instructions: https://www.mpich.org/static/downloads/3.2.1/mpich-3.2.1-userguide
 1. make
 2. mpiexec -n 4 ./filter
 Note: Run make file inside src folder  
-
-## How It Works
 
 ## Helpful Links: 
 1. http://matlabtricks.com/post-5/3x3-convolution-kernels-with-online-demo
