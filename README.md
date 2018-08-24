@@ -19,7 +19,7 @@ Instructions: https://www.mpich.org/static/downloads/3.2.1/mpich-3.2.1-userguide
 
 ## Compilation/Run
 1. make
-2. mpiexec -n 4 ./filter
+2. mpiexec -n 4 ./filter <br />
 Note: Run make file inside src folder  
 
 ## Helpful Links: 
