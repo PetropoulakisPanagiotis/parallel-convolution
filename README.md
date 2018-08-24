@@ -8,8 +8,7 @@ A Random image is generated and then convolution is performed with a given filte
 Notes:
 * Filter = 3 X 3 (can not be changed)
 * Given filter will be normalized
-* All processes are workers. Process 0 just sends user input in the other processes. After that process 0 is a worker. In the end <br />
-  process 0 will print some results
+* All processes are workers. Process 0 just sends user input in the other processes. After that process 0 is a worker. In the end process 0 will print some results
 * Timers only includes computation and messages(pre/post-procesing is excluded)
 * Every pixel has 8 heighbours 
 * Given number of processes must be a perfect square (For image division)
