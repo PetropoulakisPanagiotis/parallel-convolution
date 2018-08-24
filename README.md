@@ -11,7 +11,7 @@ Notes:
 * Every pixel has 8 heighbours 
 * Given number of processes must be a perfect square (For image division)
 
-## Prerequisites
+## Requirements
 * MPI-3 <br />
 Instructions: https://www.mpich.org/static/downloads/3.2.1/mpich-3.2.1-userguide.pdf
 
@@ -19,6 +19,8 @@ Instructions: https://www.mpich.org/static/downloads/3.2.1/mpich-3.2.1-userguide
 1. make
 2. mpiexec -n 4 ./filter
 Note: Run make file inside src folder  
+
+## How It Works
 
 ## Helpful Links: 
 1. http://matlabtricks.com/post-5/3x3-convolution-kernels-with-online-demo
