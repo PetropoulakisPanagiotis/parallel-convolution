@@ -1,7 +1,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 # Parallel Convolution with random image
 ![alt text](https://i1.wp.com/jeanvitor.com/wp-content/uploads/2017/07/6zX2c.png?w=364&ssl=1) <br />
-A Random image is generated and then convolution is performed with a given filter. Convolution can be performed many times(based in user-input)  <br /> 
+A Random image is generated and then convolution is performed with a given filter. Convolution can be performed many times(based in the user-input)  <br /> 
 
 ## How It Works
 A Random image is generated and then convolution is performed with a given filter. Convolution can be performed many times(based in user-input)  <br /> 
