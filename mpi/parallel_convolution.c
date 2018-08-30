@@ -22,6 +22,7 @@ int main(void){
     MPI_Status stat; // for recv
     Args_type my_args; // Arguments of current process
     int comm_size, my_rank, error;
+    int i,j;
 
     /* Initialize MPI environment - Get number of processes and rank. */
     MPI_Init(NULL,NULL);
@@ -46,11 +47,11 @@ int main(void){
     MPI_Type_commit(&filter_type);
 
     /* Create derived MPI type, same as Args_type struct */
-    const int items = 9;
-    int blocklengths[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
-    MPI_Datatype types[9] = {MPI_INT, MPI_INT, MPI_INT, MPI_INT, filter_type,
-                             MPI_INT, MPI_INT, MPI_INT, MPI_INT};
-    MPI_Aint offsets[9];
+    const int items = 10;
+    int blocklengths[10] = {1, 1, 1, 1, 1, 1, 1, 1, 1,1};
+    MPI_Datatype types[10] = {MPI_INT, MPI_INT, MPI_INT, MPI_INT, filter_type,
+                             MPI_INT, MPI_INT, MPI_INT, MPI_INT,MPI_INT};
+    MPI_Aint offsets[10];
 
     offsets[0] = offsetof(Args_type, image_type);
     offsets[1] = offsetof(Args_type, image_width);
@@ -61,14 +62,13 @@ int main(void){
     offsets[6] = offsetof(Args_type, width_remaining);
     offsets[7] = offsetof(Args_type, height_per_process);
     offsets[8] = offsetof(Args_type, height_remaining);
+    offsets[9] = offsetof(Args_type, iterations);
 
     MPI_Type_create_struct(items, blocklengths, offsets, types, &args_type);
     MPI_Type_commit(&args_type);
 
     /* Read from user the input and share arguments among all processes */
     if(my_rank == 0){
-
-        int i;
 
         error = read_user_input(&my_args, procs_per_line);
         if(error != 0)
@@ -130,51 +130,51 @@ int main(void){
 
     /* [N]North Neighbour (0) */
     if(column_id != 0) // if not on top of image
-        neighbours[0] = my_rank - procs_per_line;
+        neighbours[N] = my_rank - procs_per_line;
     else
-        neighbours[0] = MPI_PROC_NULL; // no neighbour from North
+        neighbours[N] = MPI_PROC_NULL; // no neighbour from North
 
     /* [NE]North-East Neighbour (1) */
     if(column_id != 0 && row_id != procs_per_line - 1) // if not on right up corner
-        neighbours[1] = my_rank - procs_per_line + 1;
+        neighbours[NE] = my_rank - procs_per_line + 1;
     else
-        neighbours[1] = MPI_PROC_NULL;
+        neighbours[NE] = MPI_PROC_NULL;
 
     /* [E]East Neighbour (2) */
     if(row_id != procs_per_line - 1) // if not on the right edge
-        neighbours[2] = my_rank + 1;
+        neighbours[E] = my_rank + 1;
     else
-        neighbours[2] = MPI_PROC_NULL;
+        neighbours[E] = MPI_PROC_NULL;
 
     /* [SE]South-East Neighbour (3) */
     if(column_id != procs_per_line - 1 && row_id != procs_per_line - 1) // if not on the right down corner
-        neighbours[3] = my_rank + procs_per_line + 1;
+        neighbours[SE] = my_rank + procs_per_line + 1;
     else
-        neighbours[3] = MPI_PROC_NULL;
+        neighbours[SE] = MPI_PROC_NULL;
 
     /* [S]South Neighbour (4) */
     if(column_id != procs_per_line - 1) // if not on bottom of image
-        neighbours[4] = my_rank + procs_per_line;
+        neighbours[S] = my_rank + procs_per_line;
     else
-        neighbours[4] = MPI_PROC_NULL; // no neighbour from South
+        neighbours[S] = MPI_PROC_NULL; // no neighbour from South
 
     /* [SW]South-West Neighbour (5) */
     if(column_id != procs_per_line -1 && row_id != 0) // if not on left down corner
-        neighbours[5] = my_rank + procs_per_line - 1;
+        neighbours[SW] = my_rank + procs_per_line - 1;
     else
-        neighbours[5] = MPI_PROC_NULL;
+        neighbours[SW] = MPI_PROC_NULL;
 
     /* [W]West Neighbour (6) */
     if(row_id != 0) // if not on the left edge
-        neighbours[6] = my_rank - 1;
+        neighbours[SW] = my_rank - 1;
     else
-        neighbours[6] = MPI_PROC_NULL;
+        neighbours[W] = MPI_PROC_NULL;
 
     /* [NW]North-West Neighbour (7) */
     if(row_id != 0 && column_id != 0) // if not on left up corner
-        neighbours[7] = my_rank - procs_per_line - 1;
+        neighbours[NW] = my_rank - procs_per_line - 1;
     else
-        neighbours[7] = MPI_PROC_NULL;
+        neighbours[NW] = MPI_PROC_NULL;
 
     printf("[%d]{%d,%d} %d %d %d %d %d %d %d %d\n\n",my_rank,row_id,column_id,
                                                      neighbours[0],
@@ -208,31 +208,48 @@ int main(void){
 
     srand( my_args.image_seed * ((my_rank + 333) * (my_rank + 333)) );
 
-    /* Create array that will hold all pixels and generate random image */
-    int** my_image = (int**)malloc(sizeof(int*) * my_height); // create rows
-    for(int i = 0; i < my_height; i++){
-        my_image[i] = (int*)malloc(sizeof(int) * my_width); // create columns
-    }
+    /* Create array that will hold all pixels and generate a random image           */
+    /* Add two rows and two collumns as "hallow points" -> Keep neighrous pixels    */
+    /* Note: Allocate image with a way that array has a constant offset in collumns */
+    int** my_image;
 
+    /* Allocate pointers for height */
+    my_image = malloc((my_height + 2) * sizeof(int*));
+    if(my_image == NULL)
+        MPI_Abort(MPI_COMM_WORLD,error);
+    
+    /* Allocate a contiguous array */
+    my_image[0] = malloc((my_height + 2) * (my_width + 2) * sizeof(int));
+    
+    /* Fix pointers */
+    for(i = 1; i < (my_height + 2); i++)
+        my_image[i] = &(my_image[0][i*(my_width + 2)]);
+
+    /* Fill image */
+    for(i = 1; i <  my_height + 1; i++)
+        for(j = 1; j < my_width + 1; j++)
+            my_image[i][j] = rand() % 256;
+        
 //////////////////////////////////////////////////////////////////////
-/* Test if image is correct
+ //Test if image is correct
 
     char fileName[10];
     sprintf(fileName,"File%d",my_rank);
 
     FILE* my_file = fopen(fileName, "w");
 
-    for(int i = 0; i < my_height; i++){
-        for(int j = 0; j < my_width; j++){
-            my_image[i][j] = rand() % 256;
+    for(i = 0; i < my_height + 2; i++){
+        for(j = 0; j < my_width + 2; j++){
             fprintf(my_file, "%d ", my_image[i][j]);
         }
         fprintf(my_file, "\n");
     }
 
-*/
 ///////////////////////////////////////////////////////////////////////
 
+    /* Free memory */
+    free(my_image[0]); 
+    free(my_image);
 
     /* Deallocate data types */
     MPI_Type_free(&filter_type);

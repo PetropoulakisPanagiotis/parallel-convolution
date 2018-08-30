@@ -21,6 +21,16 @@
 #define FILTER_MIN_VALUE -10
 #define MAX_ITERATIONS 200 
 
+/* Neighbours */
+#define N 0
+#define NE 1
+#define E 2
+#define SE 3
+#define S 4
+#define SW 5
+#define W 6
+#define NW 7
+
 /*  Header file for all variant functions and structs used
  *  to complete the Parallel Convolution application.
  */
