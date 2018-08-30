@@ -22,7 +22,7 @@ int main(void){
     MPI_Status stat; // for recv
     Args_type my_args; // Arguments of current process
     int comm_size, my_rank, error;
-    int i,j;
+    int i,j, iter;
 
     /* Initialize MPI environment - Get number of processes and rank. */
     MPI_Init(NULL,NULL);
@@ -211,27 +211,39 @@ int main(void){
     /* Create array that will hold all pixels and generate a random image           */
     /* Add two rows and two collumns as "hallow points" -> Keep neighrous pixels    */
     /* Note: Allocate image with a way that array has a constant offset in collumns */
-    int** my_image;
+    int** my_image_before, **my_image_after;
 
     /* Allocate pointers for height */
-    my_image = malloc((my_height + 2) * sizeof(int*));
-    if(my_image == NULL)
+    my_image_before = malloc((my_height + 2) * sizeof(int*));
+    if(my_image_before == NULL)
         MPI_Abort(MPI_COMM_WORLD,error);
     
     /* Allocate a contiguous array */
-    my_image[0] = malloc((my_height + 2) * (my_width + 2) * sizeof(int));
-    
+    my_image_before[0] = malloc((my_height + 2) * (my_width + 2) * sizeof(int));
+    if(my_image_before[0] == NULL)
+        MPI_Abort(MPI_COMM_WORLD,error);
+
     /* Fix pointers */
     for(i = 1; i < (my_height + 2); i++)
-        my_image[i] = &(my_image[0][i*(my_width + 2)]);
+        my_image_before[i] = &(my_image_before[0][i*(my_width + 2)]);
 
-    /* Fill image */
+    /* Fill initial image */
     for(i = 1; i <  my_height + 1; i++)
         for(j = 1; j < my_width + 1; j++)
-            my_image[i][j] = rand() % 256;
-        
+            my_image_before[i][j] = rand() % 256;
+    
+    /* Allocate after image */
+    my_image_after = malloc((my_height + 2) * sizeof(int*));
+    if(my_image_after == NULL)
+        MPI_Abort(MPI_COMM_WORLD,error);
+    
+    /* Allocate a contiguous array */
+    my_image_after[0] = malloc((my_height + 2) * (my_width + 2) * sizeof(int));
+    if(my_image_after[0] == NULL)
+        MPI_Abort(MPI_COMM_WORLD,error);
+
 //////////////////////////////////////////////////////////////////////
- //Test if image is correct
+/* //Test if image is correct
 
     char fileName[10];
     sprintf(fileName,"File%d",my_rank);
@@ -240,17 +252,27 @@ int main(void){
 
     for(i = 0; i < my_height + 2; i++){
         for(j = 0; j < my_width + 2; j++){
-            fprintf(my_file, "%d ", my_image[i][j]);
+            fprintf(my_file, "%d ", my_image_before[i][j]);
         }
         fprintf(my_file, "\n");
     }
-
+*/
 ///////////////////////////////////////////////////////////////////////
 
-    /* Free memory */
-    free(my_image[0]); 
-    free(my_image);
+    /* Perform convolution */
+    for(iter = 0; iter < my_args.iterations; iter++){
 
+        /* Fix types - Send - cumpute - receive - compute - wait - next loop */
+
+    } // End of iter
+
+    /* Free memory */
+    free(my_image_before[0]); 
+    free(my_image_before);
+
+    free(my_image_after[0]); 
+    free(my_image_after);
+    
     /* Deallocate data types */
     MPI_Type_free(&filter_type);
     MPI_Type_free(&filter_type1);
