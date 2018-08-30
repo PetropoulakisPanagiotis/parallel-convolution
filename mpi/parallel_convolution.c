@@ -28,11 +28,11 @@ int main(void){
     MPI_Comm_size(MPI_COMM_WORLD,&comm_size);
     MPI_Comm_rank(MPI_COMM_WORLD,&my_rank);
 
-    int procs_per_line = (int)sqrt(comm_size); // number of processes in each row/column
+    int procs_per_line = (int)sqrt(comm_size); // Number of processes in each row/column
 
     /* Check if perfect square number of processes was provided */
     if(my_rank == 0){
-        if(procs_per_line * procs_per_line != comm_size){ // not perfect square
+        if(procs_per_line * procs_per_line != comm_size){ // Not perfect square
             printf("Invalid number of processes given. Must be perfect square: 1, 4, 9, 16,...\n");
             MPI_Abort(MPI_COMM_WORLD, -1);
         }
@@ -80,11 +80,11 @@ int main(void){
         my_args.height_per_process = my_args.image_height / (int)sqrt(comm_size);
         my_args.height_remaining = my_args.image_height % (int)sqrt(comm_size);
 
-        printf("{0}t: %d, w:%d, h:%d, s:%d\nF:%lf %lf %lf %lf %lf %lf %lf %lf %lf\nwp: %d, wr: %d, hp: %d, hr: %d\n",
+        printf("{0}t: %d, w:%d, h:%d, s:%d\nF:%lf %lf %lf %lf %lf %lf %lf %lf %lf\nwp: %d, wr: %d, hp: %d, hr: %d, iter: %d\n",
         my_args.image_type,my_args.image_width,my_args.image_height,my_args.image_seed,
         my_args.filter[0][0],my_args.filter[0][1],my_args.filter[0][2],my_args.filter[1][0],my_args.filter[1][1],
         my_args.filter[1][2],my_args.filter[2][0],my_args.filter[2][1],my_args.filter[2][2],my_args.width_per_process,
-        my_args.width_remaining, my_args.height_per_process, my_args.height_remaining);
+        my_args.width_remaining, my_args.height_per_process, my_args.height_remaining,my_args.iterations);
 
         for(i = 1; i < comm_size; i++) // share to all
             MPI_Send(&my_args, 1, args_type, i, 1, MPI_COMM_WORLD);
@@ -92,11 +92,11 @@ int main(void){
     else{
         /* Get arguments from process 0*/
         MPI_Recv(&my_args, 1, args_type, 0, 1, MPI_COMM_WORLD, &stat);
-        printf("{%d}t: %d, w:%d, h:%d, s:%d\nF:%lf %lf %lf %lf %lf %lf %lf %lf %lf\nwp: %d, wr: %d, hp: %d, hr: %d\n",
+        printf("{%d}t: %d, w:%d, h:%d, s:%d\nF:%lf %lf %lf %lf %lf %lf %lf %lf %lf\nwp: %d, wr: %d, hp: %d, hr: %d, iter: %d\n",
         my_rank,my_args.image_type,my_args.image_width,my_args.image_height,my_args.image_seed,
         my_args.filter[0][0],my_args.filter[0][1],my_args.filter[0][2],my_args.filter[1][0],my_args.filter[1][1],
         my_args.filter[1][2],my_args.filter[2][0],my_args.filter[2][1],my_args.filter[2][2],my_args.width_per_process,
-        my_args.width_remaining, my_args.height_per_process, my_args.height_remaining);
+        my_args.width_remaining, my_args.height_per_process, my_args.height_remaining,my_args.iterations);
 
     }
 

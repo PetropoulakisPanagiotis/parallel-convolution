@@ -19,6 +19,7 @@
 #define FILTER_SIZE 3 // 3 x 3 -> Must not be changed
 #define FILTER_MAX_VALUE 10 // Max value for filter
 #define FILTER_MIN_VALUE -10
+#define MAX_ITERATIONS 200 
 
 /*  Header file for all variant functions and structs used
  *  to complete the Parallel Convolution application.
@@ -31,6 +32,7 @@
      double filter[FILTER_SIZE][FILTER_SIZE];
      int width_per_process, width_remaining;
      int height_per_process, height_remaining;
+     int iterations;
  }Args_type;
 
 /*  Gets the filter of convolution. Given an already allocated array    */

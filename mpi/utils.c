@@ -123,7 +123,7 @@ int read_user_input(Args_type* args, int procs_per_line){
     printf("----------------------------------------\n\n");
 
     /* Read input */
-    for(i = 0; i < 4; i++){
+    for(i = 0; i < 5; i++){
 
         /* Print message */
         switch(i){
@@ -141,6 +141,10 @@ int read_user_input(Args_type* args, int procs_per_line){
 
             case 3:
                 printf("Enter the seed of the image(image will generated based in seed):");
+                break;
+
+            case 4:
+                printf("Enter the number of iterations:");
                 break;
         } /* End switch */
 
@@ -203,6 +207,14 @@ int read_user_input(Args_type* args, int procs_per_line){
                     }
                     else
                         args->image_seed = input;
+                    break;
+                case 4:
+                    if(end != buff + strlen(buff) || input < 0 || input > MAX_ITERATIONS){
+                        printf("Please enter valid value for iterations(positive and up to %d):", MAX_ITERATIONS);
+                        end = NULL;
+                    }
+                    else
+                        args->iterations = input;
                     break;
             } /* End switch */
         } // End while
