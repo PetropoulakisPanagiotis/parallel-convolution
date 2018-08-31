@@ -22,7 +22,7 @@ int main(void){
     MPI_Status stat; // for recv
     Args_type my_args; // Arguments of current process
     int comm_size, my_rank, error;
-    int i,j, iter, index;
+    int i, j, iter, index, k, active_neighbrous = 0;
 
     /* Initialize MPI environment - Get number of processes and rank. */
     MPI_Init(NULL,NULL);
@@ -129,50 +129,66 @@ int main(void){
 
 
     /* [N]North Neighbour (0) */
-    if(column_id != 0) // if not on top of image
+    if(column_id != 0){ // if not on top of image
         neighbours[N] = my_rank - procs_per_line;
+        active_neighbrous += 1;
+    }
     else
         neighbours[N] = MPI_PROC_NULL; // no neighbour from North
 
     /* [NE]North-East Neighbour (1) */
-    if(column_id != 0 && row_id != procs_per_line - 1) // if not on right up corner
+    if(column_id != 0 && row_id != procs_per_line - 1){ // if not on right up corner
         neighbours[NE] = my_rank - procs_per_line + 1;
+        active_neighbrous += 1;
+    }
     else
         neighbours[NE] = MPI_PROC_NULL;
 
     /* [E]East Neighbour (2) */
-    if(row_id != procs_per_line - 1) // if not on the right edge
+    if(row_id != procs_per_line - 1){ // if not on the right edge
         neighbours[E] = my_rank + 1;
+        active_neighbrous += 1;
+    }
     else
         neighbours[E] = MPI_PROC_NULL;
 
     /* [SE]South-East Neighbour (3) */
-    if(column_id != procs_per_line - 1 && row_id != procs_per_line - 1) // if not on the right down corner
+    if(column_id != procs_per_line - 1 && row_id != procs_per_line - 1){ // if not on the right down corner
         neighbours[SE] = my_rank + procs_per_line + 1;
+        active_neighbrous += 1;
+    }
     else
         neighbours[SE] = MPI_PROC_NULL;
 
     /* [S]South Neighbour (4) */
-    if(column_id != procs_per_line - 1) // if not on bottom of image
+    if(column_id != procs_per_line - 1){ // if not on bottom of image
         neighbours[S] = my_rank + procs_per_line;
+        active_neighbrous += 1;
+    }
     else
         neighbours[S] = MPI_PROC_NULL; // no neighbour from South
 
     /* [SW]South-West Neighbour (5) */
-    if(column_id != procs_per_line -1 && row_id != 0) // if not on left down corner
+    if(column_id != procs_per_line -1 && row_id != 0){ // if not on left down corner
         neighbours[SW] = my_rank + procs_per_line - 1;
+        active_neighbrous += 1;
+    }
     else
         neighbours[SW] = MPI_PROC_NULL;
 
     /* [W]West Neighbour (6) */
-    if(row_id != 0) // if not on the left edge
-        neighbours[SW] = my_rank - 1;
+    if(row_id != 0){ // if not on the left edge
+        neighbours[W] = my_rank - 1;
+        active_neighbrous += 1;
+    }
     else
         neighbours[W] = MPI_PROC_NULL;
 
     /* [NW]North-West Neighbour (7) */
-    if(row_id != 0 && column_id != 0) // if not on left up corner
+    if(row_id != 0 && column_id != 0){ // if not on left up corner
         neighbours[NW] = my_rank - procs_per_line - 1;
+        active_neighbrous += 1;
+    }
     else
         neighbours[NW] = MPI_PROC_NULL;
 
@@ -211,7 +227,7 @@ int main(void){
     /* Create array that will hold all pixels and generate a random image           */
     /* Add two rows and two collumns as "hallow points" -> Keep neighrous pixels    */
     /* Note: Allocate image with a way that array has a constant offset in collumns */
-    int** my_image_before, **my_image_after;
+    int** my_image_before, **my_image_after, *tmp_ptr;
 
     /* Allocate pointers for height */
     my_image_before = malloc((my_height + 2) * sizeof(int*));
@@ -258,7 +274,6 @@ int main(void){
     }
 */
 ///////////////////////////////////////////////////////////////////////
-
 
     /* Fix some derived types for communication - columns */
     MPI_Datatype right_column_type, left_column_type;
@@ -320,17 +335,33 @@ int main(void){
         MPI_Start(&recv_requests[SW]);
         MPI_Start(&recv_requests[W]);
         MPI_Start(&recv_requests[NW]);
-        for(i = 0; i < 8; i++){
-
-            MPI_Waitany(8,recv_requests,&index,&stat);
+        
+        for(k = 0; k < active_neighbrous; k++){    
+            MPI_Waitany(8,recv_requests,&index,&stat);   
 
             printf("index: %d - tag: %d\n",index,stat.MPI_TAG); 
         } // End for
 
-        MPI_Waitall(8,send_requests,NULL);
+        char fileName[10];
+        sprintf(fileName,"File%d",my_rank);
 
+        FILE* my_file = fopen(fileName, "w");
+
+        for(i = 0; i < my_height + 2; i++){
+            for(j = 0; j < my_width + 2; j++){
+                fprintf(my_file, "%d ", my_image_before[i][j]);
+        }
+        
+        fprintf(my_file, "\n");
+        }
+
+        /* Wait all pixles to be send befor to procced in the next loop */
+        MPI_Waitall(8,send_requests,MPI_STATUS_IGNORE);
+        
         /* In the next loop perform convolution in the new image */
+        tmp_ptr = (int*)my_image_before;
         my_image_before = my_image_after;
+        my_image_after = (int**)tmp_ptr;
     } // End of iter
 
     /* Free memory */
