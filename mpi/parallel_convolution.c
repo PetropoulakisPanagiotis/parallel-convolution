@@ -22,7 +22,7 @@ int main(void){
     MPI_Status stat; // for recv
     Args_type my_args; // Arguments of current process
     int comm_size, my_rank, error;
-    int i,j, iter;
+    int i,j, iter, index;
 
     /* Initialize MPI environment - Get number of processes and rank. */
     MPI_Init(NULL,NULL);
@@ -299,7 +299,7 @@ int main(void){
     /* Perform convolution */
     for(iter = 0; iter < my_args.iterations; iter++){
 
-        /* Send my pixels */
+        /* Start sending my pixels/non-blocking */
         MPI_Start(&send_requests[N]);
         MPI_Start(&send_requests[NE]);
         MPI_Start(&send_requests[E]);
@@ -310,6 +310,22 @@ int main(void){
         MPI_Start(&send_requests[NW]);
 
         /* Be sure that neighbours receive our pixels. Wait and then jump in the next loop */
+
+        /* Start receiving neighbours pixels/non-blocking */
+        MPI_Start(&recv_requests[N]);
+        MPI_Start(&recv_requests[NE]);
+        MPI_Start(&recv_requests[E]);
+        MPI_Start(&recv_requests[SE]);
+        MPI_Start(&recv_requests[S]);
+        MPI_Start(&recv_requests[SW]);
+        MPI_Start(&recv_requests[W]);
+        MPI_Start(&recv_requests[NW]);
+        for(i = 0; i < 8; i++){
+
+            MPI_Waitany(8,recv_requests,&index,&stat);
+
+            printf("index: %d - tag: %d\n",index,stat.MPI_TAG); 
+        } // End for
 
         MPI_Waitall(8,send_requests,NULL);
 
