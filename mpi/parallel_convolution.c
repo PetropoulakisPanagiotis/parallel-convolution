@@ -259,11 +259,62 @@ int main(void){
 */
 ///////////////////////////////////////////////////////////////////////
 
+
+    /* Fix some derived types for communication - columns */
+    MPI_Datatype right_column_type, left_column_type;
+
+    MPI_Type_vector(my_height,1,my_height,MPI_INT,&right_column_type);
+    MPI_Type_commit(&right_column_type);
+
+    MPI_Type_vector(my_height,1,my_height,MPI_INT,&left_column_type);
+    MPI_Type_commit(&left_column_type);
+
+    /* Initialize communication with neigbrous */
+    MPI_Request send_requests[8];
+    MPI_Request recv_requests[8];
+
+    for(i = 0; i < 8; i++){
+        send_requests[i] = neighbours[i];
+        recv_requests[i] = neighbours[i];
+    }
+
+    MPI_Send_init(&my_image_before[1][1],my_width,MPI_INT,neighbours[N],N,MPI_COMM_WORLD,&send_requests[N]);
+    MPI_Send_init(&my_image_before[1][my_width],1,MPI_INT,neighbours[NE],NE,MPI_COMM_WORLD,&send_requests[NE]);
+    MPI_Send_init(&my_image_before[1][my_width],1,right_column_type,neighbours[E],E,MPI_COMM_WORLD,&send_requests[E]);
+    MPI_Send_init(&my_image_before[my_height][my_width],1,MPI_INT,neighbours[SE],SE,MPI_COMM_WORLD,&send_requests[SE]);
+    MPI_Send_init(&my_image_before[my_height][1],my_width,MPI_INT,neighbours[S],S,MPI_COMM_WORLD,&send_requests[S]);
+    MPI_Send_init(&my_image_before[my_height][1],1,MPI_INT,neighbours[SW],SW,MPI_COMM_WORLD,&send_requests[SW]);
+    MPI_Send_init(&my_image_before[1][1],1,left_column_type,neighbours[W],W,MPI_COMM_WORLD,&send_requests[W]);
+    MPI_Send_init(&my_image_before[1][1],1,MPI_INT,neighbours[NW],NW,MPI_COMM_WORLD,&send_requests[NW]);
+
+    MPI_Recv_init(&my_image_before[0][1],my_width,MPI_INT,neighbours[N],N,MPI_COMM_WORLD,&recv_requests[N]);
+    MPI_Recv_init(&my_image_before[0][my_width + 1],1,MPI_INT,neighbours[NE],NE,MPI_COMM_WORLD,&recv_requests[NE]);
+    MPI_Recv_init(&my_image_before[1][my_width + 1],1,right_column_type,neighbours[E],E,MPI_COMM_WORLD,&recv_requests[E]);
+    MPI_Recv_init(&my_image_before[my_height + 1][my_width + 1],1,MPI_INT,neighbours[SE],SE,MPI_COMM_WORLD,&recv_requests[SE]);
+    MPI_Recv_init(&my_image_before[my_height + 1][1],my_width,MPI_INT,neighbours[S],S,MPI_COMM_WORLD,&recv_requests[S]);
+    MPI_Recv_init(&my_image_before[my_height + 1][0],1,MPI_INT,neighbours[SW],SW,MPI_COMM_WORLD,&recv_requests[SW]);
+    MPI_Recv_init(&my_image_before[1][0],1,left_column_type,neighbours[W],W,MPI_COMM_WORLD,&recv_requests[W]);
+    MPI_Recv_init(&my_image_before[0][0],1,MPI_INT,neighbours[NW],NW,MPI_COMM_WORLD,&recv_requests[NW]);
+
     /* Perform convolution */
     for(iter = 0; iter < my_args.iterations; iter++){
 
-        /* Fix types - Send - cumpute - receive - compute - wait - next loop */
+        /* Send my pixels */
+        MPI_Start(&send_requests[N]);
+        MPI_Start(&send_requests[NE]);
+        MPI_Start(&send_requests[E]);
+        MPI_Start(&send_requests[SE]);
+        MPI_Start(&send_requests[S]);
+        MPI_Start(&send_requests[SW]);
+        MPI_Start(&send_requests[W]);
+        MPI_Start(&send_requests[NW]);
 
+        /* Be sure that neighbours receive our pixels. Wait and then jump in the next loop */
+
+        MPI_Waitall(8,send_requests,NULL);
+
+        /* In the next loop perform convolution in the new image */
+        my_image_before = my_image_after;
     } // End of iter
 
     /* Free memory */
@@ -277,6 +328,8 @@ int main(void){
     MPI_Type_free(&filter_type);
     MPI_Type_free(&filter_type1);
     MPI_Type_free(&args_type);
+    MPI_Type_free(&right_column_type);
+    MPI_Type_free(&left_column_type);
 
     /* Terminate MPI execution */
     MPI_Finalize();
