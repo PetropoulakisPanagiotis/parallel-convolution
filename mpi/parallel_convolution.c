@@ -294,8 +294,7 @@ int main(void){
     MPI_Send_init(&my_image_before[1][1],1,column_type,neighbours[W],W,MPI_COMM_WORLD,&send_requests[W]);
     MPI_Send_init(&my_image_before[1][1],1,MPI_INT,neighbours[NW],NW,MPI_COMM_WORLD,&send_requests[NW]);
 
-    PI_Recv_init(&my_image_before[0][1],my_width,MPI_INT,neighbours[N],N,MPI_COMM_WORLD,&recv_requests[N]);
-    
+    MPI_Recv_init(&my_image_before[0][1],my_width,MPI_INT,neighbours[N],N,MPI_COMM_WORLD,&recv_requests[N]);
     MPI_Recv_init(&my_image_before[0][my_width + 1],1,MPI_INT,neighbours[NE],NE,MPI_COMM_WORLD,&recv_requests[NE]);
     MPI_Recv_init(&my_image_before[1][my_width + 1],1,column_type,neighbours[E],E,MPI_COMM_WORLD,&recv_requests[E]);
     MPI_Recv_init(&my_image_before[my_height + 1][my_width + 1],1,MPI_INT,neighbours[SE],SE,MPI_COMM_WORLD,&recv_requests[SE]);
@@ -308,39 +307,25 @@ int main(void){
     for(iter = 0; iter < my_args.iterations; iter++){
 
         /* Start sending my pixels/non-blocking */
-        MPI_Start(&send_requests[N]);
-        MPI_Start(&send_requests[NE]);
-        MPI_Start(&send_requests[E]);
-        MPI_Start(&send_requests[SE]);
-        MPI_Start(&send_requests[S]);
-        MPI_Start(&send_requests[SW]);
-        MPI_Start(&send_requests[W]);
-        MPI_Start(&send_requests[NW]);
-
+        MPI_Startall(8,send_requests);
         /* Convolute inner pixels first */
 
         /* Start receiving neighbours pixels/non-blocking */
-        MPI_Start(&recv_requests[N]);
-        MPI_Start(&recv_requests[NE]);
-        MPI_Start(&recv_requests[E]);
-        MPI_Start(&recv_requests[SE]);
-        MPI_Start(&recv_requests[S]);
-        MPI_Start(&recv_requests[SW]);
-        MPI_Start(&recv_requests[W]);
-        MPI_Start(&recv_requests[NW]);
-       
-        /* Start convoluting remaining pixels */
-        for(k = 0; k < active_neighbrous; k++){    
-            MPI_Waitany(8,recv_requests,&index,&stat);   
+        MPI_Startall(8,recv_requests);
 
-            printf("index: %d - tag: %d\n",index,stat.MPI_TAG);
+        MPI_Status recv_stat;
+
+        /* Problem with tag - hallow points not changing */
+        for(k = 0; k < active_neighbrous; k++){  
+            MPI_Waitany(8,recv_requests,&index,&recv_stat);   
+            printf("rank %d tag: %d\n",my_rank,recv_stat.MPI_TAG);
         } // End for
 
-        if(my_rank == 0){
-            for(i = 1; i < my_width; i++)
-                printf("%d\n",my_image_before[i][my_width + 1]);
-        }
+        //for(i = 1; i < my_height; i++)
+          //  printf("rand %d i%d %d\n",my_rank,i, my_image_before[i][my_width + 1]);
 
+        /*
+        // Print array //
         char fileName[10];
         sprintf(fileName,"File%d",my_rank);
 
@@ -349,11 +334,14 @@ int main(void){
         for(i = 0; i < my_height + 2; i++){
             for(j = 0; j < my_width + 2; j++){
                 fprintf(my_file, "%d ", my_image_before[i][j]);
+            }
+         
+            fprintf(my_file, "\n");
+            fflush(my_file);
         }
         
-        fprintf(my_file, "\n");
-        }
-        
+        fclose(my_file);
+*/
         /* Wait all pixles to be send befor to procced in the next loop */
         MPI_Waitall(8,send_requests,MPI_STATUS_IGNORE);
         
