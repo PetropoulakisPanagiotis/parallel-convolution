@@ -239,7 +239,7 @@ int main(void){
     if(my_image_before[0] == NULL)
         MPI_Abort(MPI_COMM_WORLD,error);
 
-    /* Fix pointers */
+    /* Fix pointers so we result in having a contiguous array*/
     for(i = 1; i < (my_height + 2); i++)
         my_image_before[i] = &(my_image_before[0][i*(my_width + 2)]);
 
@@ -247,6 +247,7 @@ int main(void){
     for(i = 1; i <  my_height + 1; i++)
         for(j = 1; j < my_width + 1; j++)
             my_image_before[i][j] = rand() % 256;
+
 
 /* Set edges as -1 for better checking(can be removed) */
 /////////////////////////////////////////////////////////////
@@ -272,6 +273,11 @@ int main(void){
     my_image_after[0] = malloc((my_height + 2) * (my_width + 2) * sizeof(int));
     if(my_image_after[0] == NULL)
         MPI_Abort(MPI_COMM_WORLD,error);
+
+    /* Fix pointers so we result in having a contiguous array */
+    for(i = 1; i < (my_height + 2); i++)
+        my_image_after[i] = &(my_image_after[0][i*(my_width + 2)]);
+
 
 /* Save image before iretations, for check(can be removed) */
 /////////////////////////////////////////////////////////////
@@ -324,7 +330,28 @@ int main(void){
 
         /* Start sending my pixels/non-blocking */
         MPI_Startall(8,send_requests);
+
+        //////////////////////////////////
         /* Convolute inner pixels first */
+        //////////////////////////////////
+
+        for(i = 2; i < my_height; i++){ // for every inner row
+            for(j = 2; j < my_width; j++){ // and every inner column
+
+                /* Compute the new value of the current pixel */
+                my_image_after[i][j] =  my_image_before[i][j] * (int)my_args.filter[i][j] +
+                                        my_image_before[i - 1][j] * (int)my_args.filter[i - 1][j] +
+                                        my_image_before[i - 1][j + 1] * (int)my_args.filter[i - 1][j + 1] +
+                                        my_image_before[i][j + 1] * (int)my_args.filter[i][j + 1] +
+                                        my_image_before[i + 1][j + 1] * (int)my_args.filter[i + 1][j + 1] +
+                                        my_image_before[i + 1][j] * (int)my_args.filter[i + 1][j] +
+                                        my_image_before[i + 1][j - 1] * (int)my_args.filter[i + 1][j - 1] +
+                                        my_image_before[i][j - 1] * (int)my_args.filter[i][j - 1] +
+                                        my_image_before[i - 1][j - 1] * (int)my_args.filter[i - 1][j - 1];
+                //printf("[%d]I just calculated pixel[%d][%d] = %d\n", my_rank, i, j, my_image_after[i][j]);
+            }
+        }
+
 
         /* Start receiving neighbours pixels/non-blocking */
         MPI_Startall(8,recv_requests);
@@ -336,6 +363,7 @@ int main(void){
             MPI_Waitany(8,recv_requests,&index,&recv_stat);
             printf("rank %d\t src: %d\t tag: %d\n",my_rank,recv_stat.MPI_SOURCE,recv_stat.MPI_TAG);
         } // End for
+
 
 /* Save image after iteration, for check(can be removed) */
 /////////////////////////////////////////////////////////////////////////
@@ -382,6 +410,7 @@ int main(void){
         tmp_ptr = (int*)my_image_before;
         my_image_before = my_image_after;
         my_image_after = (int**)tmp_ptr;
+
     } // End of iter
 
     /* Free memory */
