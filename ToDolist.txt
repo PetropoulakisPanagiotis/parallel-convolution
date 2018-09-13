@@ -2,12 +2,12 @@
 √ find neighbours / use NULL_MPI_process(etsi den stelnonte ta isend)
 √ hallow points
 √ fill arrays with random numbers(seed klp)
-* fix custom types -> for neighbours before isend (collumns, vectors etc). Δηλαδή ομαδοποίηση για ελαχιστοπίηση μυνημάτων όπως arguments
-* wait any -> το waitall να μην το δοκιμασούμε καν πάμε στο any που είναι πιο γρήγορο
+√ fix custom types -> for neighbours before isend (collumns, vectors etc). Δηλαδή ομαδοποίηση για ελαχιστοπίηση μυνημάτων όπως arguments
+√ wait any -> το waitall να μην το δοκιμασούμε καν πάμε στο any που είναι πιο γρήγορο
+√ init, start before isend, receive καλύτερα να γίνει μετά είναι κάτι μικρό και δεν αξίζει πριν λυθούν τα παραπάνω
 * check when computations are done -> print results/ master. Με λίγα λόγια πότε υπάρχει σύγκλιση και είναι σταθερή η εικόνα.
 * use timers() -> έχει στα αρχεία του Pacheco ένα .h με μια συνάρτηση να το χρησιμοποιήσουμε
 * inline functions -> μεταγλωτιστής κλπ + makefile
-* init, start before isend, receive καλύτερα να γίνει μετά είναι κάτι μικρό και δεν αξίζει πριν λυθούν τα παραπάνω
 * <--- Barrier <----
 ===========================================================================================================================================
 Γενικά τα παραπάνω βγαίνουμε με τον κώδικα που έφτιαξα σε παρόμοια λογική μερικά θέλουν συζήτηση που θα μιλήσουμε.
@@ -32,6 +32,6 @@ functions MPI_ το να ελέγεις για success δεν έχει νόημ�
    √ Θα δίνεται το Args_type σαν παράμετρος.
    √ Ο αριθμός των διεργασιών πρέπει να είναι τέλειο τετράγωνο.
    √ Το ύψος και πλάτος πρέπει να είναι μεγαλύτερα ή ίσα της sqrt(comm_size).
--> Φτιάξιμο extra στηλών-γραμμών για γειτονικά.
--> Εύρεση πώς θα κάνουμε τα hallow points.
+√ Φτιάξιμο extra στηλών-γραμμών για γειτονικά.
+√ Εύρεση πώς θα κάνουμε τα hallow points.
 -> Memory allocations and errors(valgrind).
