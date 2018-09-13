@@ -233,7 +233,7 @@ int main(void){
     my_image_before = malloc((my_height + 2) * sizeof(int*));
     if(my_image_before == NULL)
         MPI_Abort(MPI_COMM_WORLD,error);
-    
+
     /* Allocate a contiguous array */
     my_image_before[0] = malloc((my_height + 2) * (my_width + 2) * sizeof(int));
     if(my_image_before[0] == NULL)
@@ -247,53 +247,69 @@ int main(void){
     for(i = 1; i <  my_height + 1; i++)
         for(j = 1; j < my_width + 1; j++)
             my_image_before[i][j] = rand() % 256;
-    
+
+/* Set edges as -1 for better checking(can be removed) */
+/////////////////////////////////////////////////////////////
+
+    for(i = 0; i < my_height + 2; i++){
+        my_image_before[i][0] = -1;
+        my_image_before[i][my_width + 1] = -1;
+    }
+
+    for(j = 0; j < my_width + 2; j++){
+        my_image_before[0][j] = -1;
+        my_image_before[my_height + 1][j] = -1;
+    }
+
+//////////////////////////////////////////////////////////////
+
     /* Allocate after image */
     my_image_after = malloc((my_height + 2) * sizeof(int*));
     if(my_image_after == NULL)
         MPI_Abort(MPI_COMM_WORLD,error);
-    
+
     /* Allocate a contiguous array */
     my_image_after[0] = malloc((my_height + 2) * (my_width + 2) * sizeof(int));
     if(my_image_after[0] == NULL)
         MPI_Abort(MPI_COMM_WORLD,error);
 
-//////////////////////////////////////////////////////////////////////
-/* //Test if image is correct
+/* Save image before iretations, for check(can be removed) */
+/////////////////////////////////////////////////////////////
 
     char fileName[10];
-    sprintf(fileName,"File%d",my_rank);
+    sprintf(fileName,"File%dA",my_rank);
 
     FILE* my_file = fopen(fileName, "w");
 
     for(i = 0; i < my_height + 2; i++){
         for(j = 0; j < my_width + 2; j++){
-            fprintf(my_file, "%d ", my_image_before[i][j]);
+            fprintf(my_file, "%d\t", my_image_before[i][j]);
         }
         fprintf(my_file, "\n");
     }
-*/
-///////////////////////////////////////////////////////////////////////
 
-    /* Fix some derived types for communication - columns */
+/////////////////////////////////////////////////////////////
+
+    /* Set columns type for sending columns East and West */
     MPI_Datatype column_type;
-
-    MPI_Type_vector(my_height,1,my_height,MPI_INT,&column_type);
+    MPI_Type_vector(my_height,1,my_width + 2,MPI_INT,&column_type);
     MPI_Type_commit(&column_type);
 
     /* Initialize communication with neigbrous */
     MPI_Request send_requests[8];
     MPI_Request recv_requests[8];
-    
-    MPI_Send_init(&my_image_before[1][1],my_width,MPI_INT,neighbours[N],N,MPI_COMM_WORLD,&send_requests[N]);
-    MPI_Send_init(&my_image_before[1][my_width],1,MPI_INT,neighbours[NE],NE,MPI_COMM_WORLD,&send_requests[NE]);
-    MPI_Send_init(&my_image_before[1][my_width],1,column_type,neighbours[E],E,MPI_COMM_WORLD,&send_requests[E]);
-    MPI_Send_init(&my_image_before[my_height][my_width],1,MPI_INT,neighbours[SE],SE,MPI_COMM_WORLD,&send_requests[SE]);
-    MPI_Send_init(&my_image_before[my_height][1],my_width,MPI_INT,neighbours[S],S,MPI_COMM_WORLD,&send_requests[S]);
-    MPI_Send_init(&my_image_before[my_height][1],1,MPI_INT,neighbours[SW],SW,MPI_COMM_WORLD,&send_requests[SW]);
-    MPI_Send_init(&my_image_before[1][1],1,column_type,neighbours[W],W,MPI_COMM_WORLD,&send_requests[W]);
-    MPI_Send_init(&my_image_before[1][1],1,MPI_INT,neighbours[NW],NW,MPI_COMM_WORLD,&send_requests[NW]);
 
+    /* Send to each neighbour, tagging it with the opposite direction of the receiving process(eg N->S, SW -> NE) */
+    MPI_Send_init(&my_image_before[1][1],my_width,MPI_INT,neighbours[N],S,MPI_COMM_WORLD,&send_requests[N]);
+    MPI_Send_init(&my_image_before[1][my_width],1,MPI_INT,neighbours[NE],SW,MPI_COMM_WORLD,&send_requests[NE]);
+    MPI_Send_init(&my_image_before[1][my_width],1,column_type,neighbours[E],W,MPI_COMM_WORLD,&send_requests[E]);
+    MPI_Send_init(&my_image_before[my_height][my_width],1,MPI_INT,neighbours[SE],NW,MPI_COMM_WORLD,&send_requests[SE]);
+    MPI_Send_init(&my_image_before[my_height][1],my_width,MPI_INT,neighbours[S],N,MPI_COMM_WORLD,&send_requests[S]);
+    MPI_Send_init(&my_image_before[my_height][1],1,MPI_INT,neighbours[SW],NE,MPI_COMM_WORLD,&send_requests[SW]);
+    MPI_Send_init(&my_image_before[1][1],1,column_type,neighbours[W],E,MPI_COMM_WORLD,&send_requests[W]);
+    MPI_Send_init(&my_image_before[1][1],1,MPI_INT,neighbours[NW],SE,MPI_COMM_WORLD,&send_requests[NW]);
+
+    /* Receive from all neighbours */
     MPI_Recv_init(&my_image_before[0][1],my_width,MPI_INT,neighbours[N],N,MPI_COMM_WORLD,&recv_requests[N]);
     MPI_Recv_init(&my_image_before[0][my_width + 1],1,MPI_INT,neighbours[NE],NE,MPI_COMM_WORLD,&recv_requests[NE]);
     MPI_Recv_init(&my_image_before[1][my_width + 1],1,column_type,neighbours[E],E,MPI_COMM_WORLD,&recv_requests[E]);
@@ -315,11 +331,28 @@ int main(void){
 
         MPI_Status recv_stat;
 
-        /* Problem with tag - hallow points not changing */
-        for(k = 0; k < active_neighbrous; k++){  
-            MPI_Waitany(8,recv_requests,&index,&recv_stat);   
-            printf("rank %d tag: %d\n",my_rank,recv_stat.MPI_TAG);
+        /* Keep receiving from all neighbours */
+        for(k = 0; k < 8; k++){
+            MPI_Waitany(8,recv_requests,&index,&recv_stat);
+            printf("rank %d\t src: %d\t tag: %d\n",my_rank,recv_stat.MPI_SOURCE,recv_stat.MPI_TAG);
         } // End for
+
+/* Save image after iteration, for check(can be removed) */
+/////////////////////////////////////////////////////////////////////////
+
+            char fileName[10];
+            sprintf(fileName,"File%dB",my_rank);
+
+            FILE* my_file = fopen(fileName, "w");
+
+            for(i = 0; i < my_height + 2; i++){
+                for(j = 0; j < my_width + 2; j++){
+                    fprintf(my_file, "%d\t", my_image_before[i][j]);
+                }
+                fprintf(my_file, "\n");
+            }
+
+///////////////////////////////////////////////////////////////////////
 
         //for(i = 1; i < my_height; i++)
           //  printf("rand %d i%d %d\n",my_rank,i, my_image_before[i][my_width + 1]);
@@ -335,29 +368,29 @@ int main(void){
             for(j = 0; j < my_width + 2; j++){
                 fprintf(my_file, "%d ", my_image_before[i][j]);
             }
-         
+
             fprintf(my_file, "\n");
             fflush(my_file);
         }
-        
+
         fclose(my_file);
 */
-        /* Wait all pixles to be send befor to procced in the next loop */
+        /* Wait all pixles to be send before to procceeding to the next loop */
         MPI_Waitall(8,send_requests,MPI_STATUS_IGNORE);
-        
-        /* In the next loop perform convolution in the new image */
+
+        /* In the next loop perform convolution to the new image */
         tmp_ptr = (int*)my_image_before;
         my_image_before = my_image_after;
         my_image_after = (int**)tmp_ptr;
     } // End of iter
 
     /* Free memory */
-    free(my_image_before[0]); 
+    free(my_image_before[0]);
     free(my_image_before);
 
-    free(my_image_after[0]); 
+    free(my_image_after[0]);
     free(my_image_after);
-    
+
     /* Deallocate data types */
     MPI_Type_free(&filter_type);
     MPI_Type_free(&filter_type1);
