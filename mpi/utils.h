@@ -37,8 +37,8 @@
 
 /* Arguments struct for each mpi process */
 typedef struct Args_type{
-     double filter[FILTER_SIZE][FILTER_SIZE];
      int image_type, image_width, image_height, image_seed;
+     double filter[FILTER_SIZE][FILTER_SIZE];
      int width_per_process, width_remaining;
      int height_per_process, height_remaining;
      int iterations;

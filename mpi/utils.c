@@ -37,21 +37,21 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
     if(line == NULL)
         return -1;
 
-    printf("Please enter the matrix of filter(%d x %d). Seperate lines with enter\n", FILTER_SIZE,FILTER_SIZE);
+    printf("Please enter the matrix of filter(%d x %d). Seperate lines with enter\n", FILTER_SIZE, FILTER_SIZE);
 
     /* Scan filter - Receive one line each time */
 	for(i = 0; i < FILTER_SIZE; i++){
         line_sum = 0; // Sum of current line's integers
 
-		error = getline(&line,&buff_size,stdin);
+		error = getline(&line, &buff_size, stdin);
         if(error == -1){
             printf("An error occured. Try again later - read_filter(getline)");
             free(line);
             return -1;
         }
 
-		line = strtok(line,"\n"); // Discard \n
-		num = strtok(line," \n\t"); // Get first number
+		line = strtok(line, "\n"); // Discard \n
+		num = strtok(line, " \n\t"); // Get first number
 
         j = 0; /* Count number of integers scanned from input */
 
@@ -99,15 +99,15 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
     /* Read input */
     while(1){
 	    
-        error = getline(&line,&buff_size,stdin);
+        error = getline(&line, &buff_size, stdin);
         if(error == -1){
             printf("An error occured. Try again later - read_filter(getline_2)");
             free(line);
             return -1;
         }
 
-        normalize = strtok(line," \n\t");
-        if(normalize == NULL || (strcmp(normalize,"y") && strcmp(normalize,"n") && strcmp(normalize,"yes") && strcmp(normalize,"no")))
+        normalize = strtok(line, " \n\t");
+        if(normalize == NULL || (strcmp(normalize, "y") && strcmp(normalize, "n") && strcmp(normalize, "yes") && strcmp(normalize, "no")))
             printf("Please enter a valid value for your answer(n or y)\n");
         else
             break;
@@ -115,7 +115,7 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
     
 
     /* Normalize filter */
-    if(!strcmp(normalize,"y") || !strcmp(normalize,"yes")){
+    if(!strcmp(normalize, "y") || !strcmp(normalize, "yes")){
 
         printf("NORMALIZED FILTER: \n");
         for(i = 0; i < FILTER_SIZE; i++){
@@ -185,7 +185,7 @@ int read_user_input(Args_type* args, int procs_per_line){
         while(end != buff + strlen(buff)){
 
             /* Read line */
-            if(!fgets(buff,sizeof(buff),stdin)){
+            if(!fgets(buff, sizeof(buff), stdin)){
                 printf("Please try again later. Fgets error(read_user_input)\n");
                 return 1;
             }
@@ -204,7 +204,7 @@ int read_user_input(Args_type* args, int procs_per_line){
             errno = 0; //reset errno before call 
 
             /* Convert line to integer */
-            input = strtol(buff,&end,10);
+            input = strtol(buff, &end, 10);
             if(input == 0 && errno != 0){
                 printf("An error occured. Try again later - read_user_input(strtol)");
                 return -1;

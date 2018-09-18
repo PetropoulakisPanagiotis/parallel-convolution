@@ -15,26 +15,27 @@
 #include <mpi.h>
 #include <math.h>
 #include <stddef.h>
+
 #include "utils.h"
 
 int main(void){
     MPI_Datatype args_type, filter_type, filter_type1; // Define new types
-    MPI_Status stat; // for recv
+    MPI_Status stat; // For communication
     Args_type my_args; // Arguments of current process
     int comm_size, my_rank, error;
-    int i, j, iter, index, k, active_neighbrous = 0;
+    int i, j, k, iter, index;
 
     /* Initialize MPI environment - Get number of processes and rank. */
-    MPI_Init(NULL,NULL);
-    MPI_Comm_size(MPI_COMM_WORLD,&comm_size);
-    MPI_Comm_rank(MPI_COMM_WORLD,&my_rank);
+    MPI_Init(NULL, NULL);
+    MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
     int procs_per_line = (int)sqrt(comm_size); // Number of processes in each row/column
 
-    /* Check if perfect square number of processes was provided */
+    /* Check if number of processes is a perfect square */
     if(my_rank == 0){
-        if(procs_per_line * procs_per_line != comm_size){ // Not perfect square
-            printf("Invalid number of processes given. Must be perfect square: 1, 4, 9, 16,...\n");
+        if(procs_per_line * procs_per_line != comm_size){
+            printf("Invalid number of processes given. Must be a perfect square: 1, 4, 9, 16,...\n");
             MPI_Abort(MPI_COMM_WORLD, -1);
         }
     }
@@ -46,7 +47,7 @@ int main(void){
     MPI_Type_contiguous(FILTER_SIZE, filter_type1, &filter_type); // 3x3
     MPI_Type_commit(&filter_type);
 
-    /* Create derived MPI type, same as Args_type struct */
+    /* Create derived MPI type for Args_type struct */
     const int items = 10;
     int blocklengths[10] = {1, 1, 1, 1, 1, 1, 1, 1, 1,1};
     MPI_Datatype types[10] = {MPI_INT, MPI_INT, MPI_INT, MPI_INT, filter_type,
@@ -67,51 +68,56 @@ int main(void){
     MPI_Type_create_struct(items, blocklengths, offsets, types, &args_type);
     MPI_Type_commit(&args_type);
 
-    /* Read from user the input and share arguments among all processes */
+    /* Read the user input and share arguments among all processes */
     if(my_rank == 0){
 
         error = read_user_input(&my_args, procs_per_line);
         if(error != 0)
-            MPI_Abort(MPI_COMM_WORLD,error);
+            MPI_Abort(MPI_COMM_WORLD, error);
 
-        /* Calculate remaining arguments */
+        /* Calculate the limits for every images */
         my_args.width_per_process = my_args.image_width / (int)sqrt(comm_size);
         my_args.width_remaining = my_args.image_width % (int)sqrt(comm_size);
         my_args.height_per_process = my_args.image_height / (int)sqrt(comm_size);
         my_args.height_remaining = my_args.image_height % (int)sqrt(comm_size);
 
-        printf("{0}t: %d, w:%d, h:%d, s:%d\nF:%lf %lf %lf %lf %lf %lf %lf %lf %lf\nwp: %d, wr: %d, hp: %d, hr: %d, iter: %d\n",
+        /*printf("{0}t: %d, w:%d, h:%d, s:%d\nF:%lf %lf %lf %lf %lf %lf %lf %lf %lf\nwp: %d, wr: %d, hp: %d, hr: %d, iter: %d\n",
         my_args.image_type,my_args.image_width,my_args.image_height,my_args.image_seed,
         my_args.filter[0][0],my_args.filter[0][1],my_args.filter[0][2],my_args.filter[1][0],my_args.filter[1][1],
         my_args.filter[1][2],my_args.filter[2][0],my_args.filter[2][1],my_args.filter[2][2],my_args.width_per_process,
         my_args.width_remaining, my_args.height_per_process, my_args.height_remaining,my_args.iterations);
+        */
 
-        for(i = 1; i < comm_size; i++) // share to all
+        /* Send arguments in other proccesses */
+        for(i = 1; i < comm_size; i++) 
             MPI_Send(&my_args, 1, args_type, i, 1, MPI_COMM_WORLD);
     }
     else{
+
         /* Get arguments from process 0*/
         MPI_Recv(&my_args, 1, args_type, 0, 1, MPI_COMM_WORLD, &stat);
+       
+        /*
         printf("{%d}t: %d, w:%d, h:%d, s:%d\nF:%lf %lf %lf %lf %lf %lf %lf %lf %lf\nwp: %d, wr: %d, hp: %d, hr: %d, iter: %d\n",
         my_rank,my_args.image_type,my_args.image_width,my_args.image_height,my_args.image_seed,
         my_args.filter[0][0],my_args.filter[0][1],my_args.filter[0][2],my_args.filter[1][0],my_args.filter[1][1],
         my_args.filter[1][2],my_args.filter[2][0],my_args.filter[2][1],my_args.filter[2][2],my_args.width_per_process,
         my_args.width_remaining, my_args.height_per_process, my_args.height_remaining,my_args.iterations);
-
+        */
     }
 
-    /* For the next step we must find the 8 neighbours of the current process */
+    /* For the next step find the 8 neighbours of the current process     */
     /* An array with 8 cells will be used in order to keep the neighbours */
-    /* 0: N, 1: NE, 2: E, 3: SE, 4: S, 5: SW, 6: W, 7: NW */
+    /* 0: N, 1: NE, 2: E, 3: SE, 4: S, 5: SW, 6: W, 7: NW                 */
 
-    /* The image is divided to processes, so we can imagine that it is a */
-    /* (sqrt(comm_size) x sqrt(comm_size)) matrix. Each process, occupies */
-    /* one cell, having a (x,y) position, where x is the number of row and */
-    /* y the number of column. We need x and y in order to find the */
+    /* The image is divided to the processes, so we can imagine that it is a */
+    /* (sqrt(comm_size) x sqrt(comm_size)) matrix. Each process, occupies    */
+    /* one cell, having a (x,y) position, where x is the number of row and   */
+    /* y the number of column. We need x and y in order to find the          */
     /* neighbours of each process, since most of them wont have 8 neighbours */
     /* (occupying cells at the edges) */
 
-    int neighbours[NUM_NEIGHBOURS]; // all neighbours of process
+    int neighbours[NUM_NEIGHBOURS]; // Keep neighbours
 
     /*
        0 1 2
@@ -129,69 +135,54 @@ int main(void){
 
 
     /* [N]North Neighbour (0) */
-    if(column_id != 0){ // if not on top of image
+    if(column_id != 0) // If not on top of image
         neighbours[N] = my_rank - procs_per_line;
-        active_neighbrous += 1;
-    }
     else
-        neighbours[N] = MPI_PROC_NULL; // no neighbour from North
+        neighbours[N] = MPI_PROC_NULL; // No neighbour from North
 
     /* [NE]North-East Neighbour (1) */
-    if(column_id != 0 && row_id != procs_per_line - 1){ // if not on right up corner
+    if(column_id != 0 && row_id != procs_per_line - 1) // If not on right up corner
         neighbours[NE] = my_rank - procs_per_line + 1;
-        active_neighbrous += 1;
-    }
     else
         neighbours[NE] = MPI_PROC_NULL;
 
     /* [E]East Neighbour (2) */
-    if(row_id != procs_per_line - 1){ // if not on the right edge
+    if(row_id != procs_per_line - 1) // If not on the right edge
         neighbours[E] = my_rank + 1;
-        active_neighbrous += 1;
-    }
     else
         neighbours[E] = MPI_PROC_NULL;
 
     /* [SE]South-East Neighbour (3) */
-    if(column_id != procs_per_line - 1 && row_id != procs_per_line - 1){ // if not on the right down corner
+    if(column_id != procs_per_line - 1 && row_id != procs_per_line - 1) // If not on the right down corner
         neighbours[SE] = my_rank + procs_per_line + 1;
-        active_neighbrous += 1;
-    }
     else
         neighbours[SE] = MPI_PROC_NULL;
 
     /* [S]South Neighbour (4) */
-    if(column_id != procs_per_line - 1){ // if not on bottom of image
+    if(column_id != procs_per_line - 1) // If not on bottom of image
         neighbours[S] = my_rank + procs_per_line;
-        active_neighbrous += 1;
-    }
     else
-        neighbours[S] = MPI_PROC_NULL; // no neighbour from South
+        neighbours[S] = MPI_PROC_NULL; // No neighbour from South
 
     /* [SW]South-West Neighbour (5) */
-    if(column_id != procs_per_line -1 && row_id != 0){ // if not on left down corner
+    if(column_id != procs_per_line -1 && row_id != 0) // If not on left down corner
         neighbours[SW] = my_rank + procs_per_line - 1;
-        active_neighbrous += 1;
-    }
     else
         neighbours[SW] = MPI_PROC_NULL;
 
     /* [W]West Neighbour (6) */
-    if(row_id != 0){ // if not on the left edge
+    if(row_id != 0){ // If not on the left edge
         neighbours[W] = my_rank - 1;
-        active_neighbrous += 1;
-    }
     else
         neighbours[W] = MPI_PROC_NULL;
 
     /* [NW]North-West Neighbour (7) */
-    if(row_id != 0 && column_id != 0){ // if not on left up corner
+    if(row_id != 0 && column_id != 0) // If not on left up corner
         neighbours[NW] = my_rank - procs_per_line - 1;
-        active_neighbrous += 1;
-    }
     else
         neighbours[NW] = MPI_PROC_NULL;
 
+    /*
     printf("[%d]{%d,%d} %d %d %d %d %d %d %d %d\n\n",my_rank,row_id,column_id,
                                                      neighbours[0],
                                                      neighbours[1],
@@ -202,13 +193,14 @@ int main(void){
                                                      neighbours[6],
                                                      neighbours[7]);
 
+    */
 
-    /* The resolution of the image that each process has, must be found */
+    /* The resolution of the image that each process has */
     int my_width, my_width_1, my_width_2;
-    int my_height, my_height_1,my_height_2;
+    int my_height, my_height_1, my_height_2;
 
     /* If width or height is not perfectly divided into processes, share */
-    /* the n remaining pixels to the first n processes */
+    /* the n remaining pixels to the first n processes                   */
     if(row_id < my_args.width_remaining)
         my_width = my_args.width_per_process + 1;
     else
@@ -219,7 +211,7 @@ int main(void){
     else
         my_height = my_args.height_per_process;
 
-    /* Fix frequent sum into new variables(height and width of array with hallow points etc)  */
+    /* Fix frequent sums into new variables(height and width of image including hallow points etc) */
     my_width_1 = my_width + 1;
     my_height_1 = my_height + 1;
 
@@ -227,38 +219,36 @@ int main(void){
     my_height_2 = my_height + 2;
     
     /* For random images, set the seed differently to each process, in order */
-    /* to have a fully random image and not repetitive cells */
+    /* to have a fully random image and not repetitive cells                 */
 
-    srand( my_args.image_seed * ((my_rank + 333) * (my_rank + 333)) );
+    srand(my_args.image_seed * ((my_rank + 333) * (my_rank + 333)));
 
     /* Create array that will hold all pixels and generate a random image           */
     /* Add two rows and two collumns as "hallow points" -> Keep neighrous pixels    */
     /* Note: Allocate image with a way that array has a constant offset in collumns */
-    int** my_image_before, **my_image_after, *tmp_ptr;
+    int** my_image_before, **my_image_after, *tmp_ptr; // Tmp for swapping
 
     /* Allocate pointers for height */
     my_image_before = malloc((my_height_2) * sizeof(int*));
     if(my_image_before == NULL)
-        MPI_Abort(MPI_COMM_WORLD,error);
+        MPI_Abort(MPI_COMM_WORLD, error);
 
     /* Allocate a contiguous array */
     my_image_before[0] = malloc((my_height_2) * (my_width_2) * sizeof(int));
     if(my_image_before[0] == NULL)
-        MPI_Abort(MPI_COMM_WORLD,error);
+        MPI_Abort(MPI_COMM_WORLD, error);
 
-    /* Fix pointers so we result in having a contiguous array*/
+    /* Fix array(rows) */
     for(i = 1; i < (my_height_2); i++)
         my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
 
-    /* Fill initial image */
+    /* Fill initial image with random numbers */
     for(i = 1; i <  my_height_1; i++)
         for(j = 1; j < my_width_1; j++)
             my_image_before[i][j] = rand() % 256;
 
 
-/* Set edges as -1 for better checking(can be removed) */
-/////////////////////////////////////////////////////////////
-
+    /* Set edges */
     for(i = 0; i < my_height_2; i++){
         my_image_before[i][0] = -1;
         my_image_before[i][my_width + 1] = -1;
@@ -269,26 +259,23 @@ int main(void){
         my_image_before[my_height_1][j] = -1;
     }
 
-//////////////////////////////////////////////////////////////
 
-    /* Allocate after image */
+    /* Allocate an image to save the result */
     my_image_after = malloc((my_height_2) * sizeof(int*));
     if(my_image_after == NULL)
-        MPI_Abort(MPI_COMM_WORLD,error);
+        MPI_Abort(MPI_COMM_WORLD, error);
 
     /* Allocate a contiguous array */
     my_image_after[0] = malloc((my_height_2) * (my_width_2) * sizeof(int));
     if(my_image_after[0] == NULL)
-        MPI_Abort(MPI_COMM_WORLD,error);
+        MPI_Abort(MPI_COMM_WORLD, error);
 
-    /* Fix pointers so we result in having a contiguous array */
+    /* Fix array */
     for(i = 1; i < (my_height_2); i++)
         my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
 
 
-/* Save image before iretations, for check(can be removed) */
-/////////////////////////////////////////////////////////////
-
+    /*
     char fileName[10];
     sprintf(fileName,"File%dA",my_rank);
 
@@ -302,49 +289,48 @@ int main(void){
     }
 
     fclose(my_file);
-
-/////////////////////////////////////////////////////////////
+    */
 
     /* Set columns type for sending columns East and West */
     MPI_Datatype column_type;
-    MPI_Type_vector(my_height,1,my_width_2,MPI_INT,&column_type);
+    MPI_Type_vector(my_height,1, my_width_2, MPI_INT, &column_type);
     MPI_Type_commit(&column_type);
 
-    /* Initialize communication with neigbrous */
+    /* Initialize communication with neighbours */
     MPI_Request send_requests[NUM_NEIGHBOURS];
     MPI_Request recv_requests[NUM_NEIGHBOURS];
 
     /* Send to each neighbour, tagging it with the opposite direction of the receiving process(eg N->S, SW -> NE) */
-    MPI_Send_init(&my_image_before[1][1],my_width,MPI_INT,neighbours[N],S,MPI_COMM_WORLD,&send_requests[N]);
-    MPI_Send_init(&my_image_before[1][my_width],1,MPI_INT,neighbours[NE],SW,MPI_COMM_WORLD,&send_requests[NE]);
-    MPI_Send_init(&my_image_before[1][my_width],1,column_type,neighbours[E],W,MPI_COMM_WORLD,&send_requests[E]);
-    MPI_Send_init(&my_image_before[my_height][my_width],1,MPI_INT,neighbours[SE],NW,MPI_COMM_WORLD,&send_requests[SE]);
-    MPI_Send_init(&my_image_before[my_height][1],my_width,MPI_INT,neighbours[S],N,MPI_COMM_WORLD,&send_requests[S]);
-    MPI_Send_init(&my_image_before[my_height][1],1,MPI_INT,neighbours[SW],NE,MPI_COMM_WORLD,&send_requests[SW]);
-    MPI_Send_init(&my_image_before[1][1],1,column_type,neighbours[W],E,MPI_COMM_WORLD,&send_requests[W]);
-    MPI_Send_init(&my_image_before[1][1],1,MPI_INT,neighbours[NW],SE,MPI_COMM_WORLD,&send_requests[NW]);
+    MPI_Send_init(&my_image_before[1][1], my_width, MPI_INT, neighbours[N], S, MPI_COMM_WORLD, &send_requests[N]);
+    MPI_Send_init(&my_image_before[1][my_width], 1, MPI_INT, neighbours[NE], SW,MPI_COMM_WORLD, &send_requests[NE]);
+    MPI_Send_init(&my_image_before[1][my_width], 1,column_type, neighbours[E], W, MPI_COMM_WORLD, &send_requests[E]);
+    MPI_Send_init(&my_image_before[my_height][my_width], 1, MPI_INT, neighbours[SE], NW, MPI_COMM_WORLD, &send_requests[SE]);
+    MPI_Send_init(&my_image_before[my_height][1], my_width, MPI_INT, neighbours[S], N, MPI_COMM_WORLD, &send_requests[S]);
+    MPI_Send_init(&my_image_before[my_height][1], 1, MPI_INT, neighbours[SW], NE, MPI_COMM_WORLD, &send_requests[SW]);
+    MPI_Send_init(&my_image_before[1][1], 1, column_type, neighbours[W], E, MPI_COMM_WORLD, &send_requests[W]);
+    MPI_Send_init(&my_image_before[1][1], 1, MPI_INT, neighbours[NW], SE, MPI_COMM_WORLD, &send_requests[NW]);
 
     /* Receive from all neighbours */
-    MPI_Recv_init(&my_image_before[0][1],my_width,MPI_INT,neighbours[N],N,MPI_COMM_WORLD,&recv_requests[N]);
-    MPI_Recv_init(&my_image_before[0][my_width_1],1,MPI_INT,neighbours[NE],NE,MPI_COMM_WORLD,&recv_requests[NE]);
-    MPI_Recv_init(&my_image_before[1][my_width_1],1,column_type,neighbours[E],E,MPI_COMM_WORLD,&recv_requests[E]);
-    MPI_Recv_init(&my_image_before[my_height_1][my_width_1],1,MPI_INT,neighbours[SE],SE,MPI_COMM_WORLD,&recv_requests[SE]);
-    MPI_Recv_init(&my_image_before[my_height_1][1],my_width,MPI_INT,neighbours[S],S,MPI_COMM_WORLD,&recv_requests[S]);
-    MPI_Recv_init(&my_image_before[my_height_1][0],1,MPI_INT,neighbours[SW],SW,MPI_COMM_WORLD,&recv_requests[SW]);
-    MPI_Recv_init(&my_image_before[1][0],1,column_type,neighbours[W],W,MPI_COMM_WORLD,&recv_requests[W]);
-    MPI_Recv_init(&my_image_before[0][0],1,MPI_INT,neighbours[NW],NW,MPI_COMM_WORLD,&recv_requests[NW]);
+    MPI_Recv_init(&my_image_before[0][1], my_width, MPI_INT, neighbours[N], N, MPI_COMM_WORLD, &recv_requests[N]);
+    MPI_Recv_init(&my_image_before[0][my_width_1], 1, MPI_INT, neighbours[NE], NE, MPI_COMM_WORLD, &recv_requests[NE]);
+    MPI_Recv_init(&my_image_before[1][my_width_1], 1, column_type, neighbours[E], E, MPI_COMM_WORLD, &recv_requests[E]);
+    MPI_Recv_init(&my_image_before[my_height_1][my_width_1], 1, MPI_INT, neighbours[SE], SE, MPI_COMM_WORLD, &recv_requests[SE]);
+    MPI_Recv_init(&my_image_before[my_height_1][1], my_width, MPI_INT, neighbours[S], S, MPI_COMM_WORLD, &recv_requests[S]);
+    MPI_Recv_init(&my_image_before[my_height_1][0], 1,MPI_INT,neighbours[SW],SW,MPI_COMM_WORLD,&recv_requests[SW]);
+    MPI_Recv_init(&my_image_before[1][0], 1, column_type, neighbours[W], W, MPI_COMM_WORLD, &recv_requests[W]);
+    MPI_Recv_init(&my_image_before[0][0], 1, MPI_INT, neighbours[NW], NW, MPI_COMM_WORLD, &recv_requests[NW]);
 
     /* Perform convolution */
     for(iter = 0; iter < my_args.iterations; iter++){
 
         /* Start sending my pixels/non-blocking */
-        MPI_Startall(NUM_NEIGHBOURS,send_requests);
+        MPI_Startall(NUM_NEIGHBOURS, send_requests);
 
         //////////////////////////////////
         /* Convolute inner pixels first */
         //////////////////////////////////
 
-        for(i = 2; i < my_height; i++){ // for every inner row
+        for(i = 2; i < my_height; i++){ // For every inner row
             for(j = 2; j < my_width; j++){ // and every inner column
 
                 /* Compute the new value of the current pixel */
@@ -363,28 +349,23 @@ int main(void){
                     my_image_after[i][j] = 0;
                 if(my_image_after[i][j] > 255)
                     my_image_after[i][j] = 255;
-
-                if(my_rank == 0)
-                    printf("%d - %d\n",my_image_before[i][j],my_image_after[i][j]);
             } // End for
         } // End for 
 
 
         /* Start receiving neighbours pixels/non-blocking */
-        MPI_Startall(NUM_NEIGHBOURS,recv_requests);
+        MPI_Startall(NUM_NEIGHBOURS, recv_requests);
 
         MPI_Status recv_stat;
 
         /* Keep receiving from all neighbours */
         for(k = 0; k < NUM_NEIGHBOURS; k++){
-            MPI_Waitany(NUM_NEIGHBOURS,recv_requests,&index,&recv_stat);
-            printf("rank %d\t src: %d\t tag: %d\n",my_rank,recv_stat.MPI_SOURCE,recv_stat.MPI_TAG);
+            MPI_Waitany(NUM_NEIGHBOURS, recv_requests, &index, &recv_stat);
+            //printf("rank %d\t src: %d\t tag: %d\n",my_rank,recv_stat.MPI_SOURCE,recv_stat.MPI_TAG);
         } // End for
 
 
-/* Save image after iteration, for check(can be removed) */
-/////////////////////////////////////////////////////////////////////////
-
+        /*
             char fileName[10];
             sprintf(fileName,"File%dB",my_rank);
 
@@ -398,23 +379,23 @@ int main(void){
             }
 
             fclose(my_file);
+        */
 
         /* Wait all pixles to be send before to procceeding to the next loop */
-        MPI_Waitall(NUM_NEIGHBOURS,send_requests,MPI_STATUS_IGNORE);
+        MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
-        /* In the next loop perform convolution to the new image */
+        /* In the next loop perform convolution to the new image  - swapp images */
         tmp_ptr = my_image_before[0];
 
         my_image_before[0] = my_image_after[0];
-        for(i = 1; i < my_height_2; i++){
+        for(i = 1; i < my_height_2; i++)
             my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
-        } // End for
 
         my_image_after[0] = tmp_ptr;
         for(i = 1; i < (my_height_2); i++)
             my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
 
-        /* Print new image before == after */
+        /*
         sprintf(fileName,"File%dC",my_rank);
 
         my_file = fopen(fileName, "w");
@@ -427,6 +408,7 @@ int main(void){
         }
 
         fclose(my_file);
+        */
 
     } // End of iter
 
