@@ -25,7 +25,7 @@ Note: Run make file inside src folder
 ## Helpful Links: 
 1. http://matlabtricks.com/post-5/3x3-convolution-kernels-with-online-demo
 2. http://setosa.io/ev/image-kernels/
-3. https://docs.gimp.org/en/plug-in-convmatrix.html
+3. https://lodev.org/cgtutor/filtering.html
 
 ## Authors
 * Petropoulakis Panagiotis petropoulakispanagiotis@gmail.com
