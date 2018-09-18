@@ -111,7 +111,7 @@ int main(void){
     /* neighbours of each process, since most of them wont have 8 neighbours */
     /* (occupying cells at the edges) */
 
-    int neighbours[8]; // all neighbours of process
+    int neighbours[NUM_NEIHGBOURS]; // all neighbours of process
 
     /*
        0 1 2
@@ -294,6 +294,8 @@ int main(void){
         fprintf(my_file, "\n");
     }
 
+    fclose(my_file);
+
 /////////////////////////////////////////////////////////////
 
     /* Set columns type for sending columns East and West */
@@ -302,8 +304,8 @@ int main(void){
     MPI_Type_commit(&column_type);
 
     /* Initialize communication with neigbrous */
-    MPI_Request send_requests[8];
-    MPI_Request recv_requests[8];
+    MPI_Request send_requests[NUM_NEIHGBOURS];
+    MPI_Request recv_requests[NUM_NEIHGBOURS];
 
     /* Send to each neighbour, tagging it with the opposite direction of the receiving process(eg N->S, SW -> NE) */
     MPI_Send_init(&my_image_before[1][1],my_width,MPI_INT,neighbours[N],S,MPI_COMM_WORLD,&send_requests[N]);
@@ -329,7 +331,7 @@ int main(void){
     for(iter = 0; iter < my_args.iterations; iter++){
 
         /* Start sending my pixels/non-blocking */
-        MPI_Startall(8,send_requests);
+        MPI_Startall(NUM_NEIHGBOURS,send_requests);
 
         //////////////////////////////////
         /* Convolute inner pixels first */
@@ -339,28 +341,36 @@ int main(void){
             for(j = 2; j < my_width; j++){ // and every inner column
 
                 /* Compute the new value of the current pixel */
-                my_image_after[i][j] =  my_image_before[i][j] * (int)my_args.filter[i][j] +
-                                        my_image_before[i - 1][j] * (int)my_args.filter[i - 1][j] +
-                                        my_image_before[i - 1][j + 1] * (int)my_args.filter[i - 1][j + 1] +
-                                        my_image_before[i][j + 1] * (int)my_args.filter[i][j + 1] +
-                                        my_image_before[i + 1][j + 1] * (int)my_args.filter[i + 1][j + 1] +
-                                        my_image_before[i + 1][j] * (int)my_args.filter[i + 1][j] +
-                                        my_image_before[i + 1][j - 1] * (int)my_args.filter[i + 1][j - 1] +
-                                        my_image_before[i][j - 1] * (int)my_args.filter[i][j - 1] +
-                                        my_image_before[i - 1][j - 1] * (int)my_args.filter[i - 1][j - 1];
-                //printf("[%d]I just calculated pixel[%d][%d] = %d\n", my_rank, i, j, my_image_after[i][j]);
-            }
-        }
+                my_image_after[i][j] =  (int)(my_image_before[i][j] * my_args.filter[1][1] +
+                                        my_image_before[i - 1][j] * my_args.filter[0][1] +
+                                        my_image_before[i - 1][j + 1] * my_args.filter[0][2] +
+                                        my_image_before[i][j + 1] * my_args.filter[1][2] +
+                                        my_image_before[i + 1][j + 1] * my_args.filter[2][2] +
+                                        my_image_before[i + 1][j] * my_args.filter[2][1] +
+                                        my_image_before[i + 1][j - 1] * my_args.filter[2][0] +
+                                        my_image_before[i][j - 1] * my_args.filter[2][0] +
+                                        my_image_before[i - 1][j - 1] * my_args.filter[0][0]);
+                
+                /* Truncated unexpected values */
+                if(my_image_after[i][j] < 0) 
+                    my_image_after[i][j] = 0;
+                if(my_image_after[i][j] > 255)
+                    my_image_after[i][j] = 255;
+
+                if(my_rank == 0)
+                    printf("%d - %d\n",my_image_before[i][j],my_image_after[i][j]);
+            } // End for
+        } // End for 
 
 
         /* Start receiving neighbours pixels/non-blocking */
-        MPI_Startall(8,recv_requests);
+        MPI_Startall(NUM_NEIHGBOURS,recv_requests);
 
         MPI_Status recv_stat;
 
         /* Keep receiving from all neighbours */
-        for(k = 0; k < 8; k++){
-            MPI_Waitany(8,recv_requests,&index,&recv_stat);
+        for(k = 0; k < NUM_NEIHGBOURS; k++){
+            MPI_Waitany(NUM_NEIHGBOURS,recv_requests,&index,&recv_stat);
             printf("rank %d\t src: %d\t tag: %d\n",my_rank,recv_stat.MPI_SOURCE,recv_stat.MPI_TAG);
         } // End for
 
@@ -380,37 +390,21 @@ int main(void){
                 fprintf(my_file, "\n");
             }
 
-///////////////////////////////////////////////////////////////////////
+            fclose(my_file);
 
-        //for(i = 1; i < my_height; i++)
-          //  printf("rand %d i%d %d\n",my_rank,i, my_image_before[i][my_width + 1]);
-
-        /*
-        // Print array //
-        char fileName[10];
-        sprintf(fileName,"File%d",my_rank);
-
-        FILE* my_file = fopen(fileName, "w");
-
-        for(i = 0; i < my_height + 2; i++){
-            for(j = 0; j < my_width + 2; j++){
-                fprintf(my_file, "%d ", my_image_before[i][j]);
-            }
-
-            fprintf(my_file, "\n");
-            fflush(my_file);
-        }
-
-        fclose(my_file);
-*/
         /* Wait all pixles to be send before to procceeding to the next loop */
-        MPI_Waitall(8,send_requests,MPI_STATUS_IGNORE);
+        MPI_Waitall(NUM_NEIHGBOURS,send_requests,MPI_STATUS_IGNORE);
 
         /* In the next loop perform convolution to the new image */
-        tmp_ptr = (int*)my_image_before;
-        my_image_before = my_image_after;
-        my_image_after = (int**)tmp_ptr;
+        tmp_ptr = (int*)&my_image_before[0];
 
+        for(i = 0; i < my_height + 2; i++){
+            my_image_before[i] = (int*)&my_image_after[i];
+        } // End for
+
+        my_image_after[0] = tmp_ptr;
+        for(i = 1; i < (my_height + 2); i++)
+            my_image_after[i] = &(tmp_ptr[i*(my_width + 2)]);
     } // End of iter
 
     /* Free memory */

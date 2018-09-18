@@ -22,6 +22,7 @@
 #define MAX_ITERATIONS 200 
 
 /* Neighbours */
+#define NUM_NEIHGBOURS 8
 #define N 0
 #define NE 1
 #define E 2
