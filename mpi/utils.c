@@ -25,12 +25,13 @@
 /* Success: 0                */
 /* Failure: -1               */
 int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
-    char* num; // Seperating values from input
+    char* num, *normalize; // Seperating values from input - normalize or not the filter
     char* line; // For getline
     size_t buff_size = 50; // Initial buffer size
     int total_sum = 0, line_sum; // Sum of filter values(for normalization) - Sum per line
     int i, j, error;
     
+
     /* Allocate memory for line buffer */
     line = malloc(sizeof(char) * buff_size);
     if(line == NULL)
@@ -42,7 +43,7 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
 	for(i = 0; i < FILTER_SIZE; i++){
         line_sum = 0; // Sum of current line's integers
 
-		error = getline(&line, &buff_size,stdin);
+		error = getline(&line,&buff_size,stdin);
         if(error == -1){
             printf("An error occured. Try again later - read_filter(getline)");
             free(line);
@@ -92,25 +93,38 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
             total_sum += line_sum; // Line was valid, add it in total sum
 	} // End for
     
-    /* Print given and normalized filters */
+    /* Normalize or not the filter */
+    printf("If you want to normalize filter press y otherwise n:");
 
-    printf("\nGIVEN FILTER: \n");
-    for(i = 0; i < FILTER_SIZE; i++){
-        for(j = 0; j < FILTER_SIZE; j++){
-            printf("%d ",(int)filter[i][j]);
-            
-            /* Normalize filter */
-            filter[i][j] = ceilf((filter[i][j] / (double)total_sum) * 100) / 100;
+    /* Read input */
+    while(1){
+	    
+        error = getline(&line,&buff_size,stdin);
+        if(error == -1){
+            printf("An error occured. Try again later - read_filter(getline_2)");
+            free(line);
+            return -1;
         }
-        puts("");
-    }
 
-    printf("NORMALIZED FILTER: \n");
-    for(i = 0; i < FILTER_SIZE; i++){
-        for(j = 0; j < FILTER_SIZE; j++){
-            printf("%.2f ",filter[i][j]);
-        }
-        puts("");
+        normalize = strtok(line," \n\t");
+        if(normalize == NULL || (strcmp(normalize,"y") && strcmp(normalize,"n") && strcmp(normalize,"yes") && strcmp(normalize,"no")))
+            printf("Please enter a valid value for your answer(n or y)\n");
+        else
+            break;
+    } // End while
+    
+
+    /* Normalize filter */
+    if(!strcmp(normalize,"y") || !strcmp(normalize,"yes")){
+
+        printf("NORMALIZED FILTER: \n");
+        for(i = 0; i < FILTER_SIZE; i++){
+            for(j = 0; j < FILTER_SIZE; j++){
+                filter[i][j] = ceilf((filter[i][j] / (double)total_sum) * 100) / 100;
+                printf("%.2f ",filter[i][j]);
+            } // End for
+            puts("");
+        } // End for
     }
 
     free(line);
