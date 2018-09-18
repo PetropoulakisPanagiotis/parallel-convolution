@@ -204,8 +204,8 @@ int main(void){
 
 
     /* The resolution of the image that each process has, must be found */
-    int my_width;
-    int my_height;
+    int my_width, my_width_1, my_width_2;
+    int my_height, my_height_1,my_height_2;
 
     /* If width or height is not perfectly divided into processes, share */
     /* the n remaining pixels to the first n processes */
@@ -219,6 +219,13 @@ int main(void){
     else
         my_height = my_args.height_per_process;
 
+    /* Fix frequent sum into new variables(height and width of array with hallow points etc)  */
+    my_width_1 = my_width + 1;
+    my_height_1 = my_height + 1;
+
+    my_width_2 = my_width + 2;
+    my_height_2 = my_height + 2;
+    
     /* For random images, set the seed differently to each process, in order */
     /* to have a fully random image and not repetitive cells */
 
@@ -230,53 +237,53 @@ int main(void){
     int** my_image_before, **my_image_after, *tmp_ptr;
 
     /* Allocate pointers for height */
-    my_image_before = malloc((my_height + 2) * sizeof(int*));
+    my_image_before = malloc((my_height_2) * sizeof(int*));
     if(my_image_before == NULL)
         MPI_Abort(MPI_COMM_WORLD,error);
 
     /* Allocate a contiguous array */
-    my_image_before[0] = malloc((my_height + 2) * (my_width + 2) * sizeof(int));
+    my_image_before[0] = malloc((my_height_2) * (my_width_2) * sizeof(int));
     if(my_image_before[0] == NULL)
         MPI_Abort(MPI_COMM_WORLD,error);
 
     /* Fix pointers so we result in having a contiguous array*/
-    for(i = 1; i < (my_height + 2); i++)
-        my_image_before[i] = &(my_image_before[0][i*(my_width + 2)]);
+    for(i = 1; i < (my_height_2); i++)
+        my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
 
     /* Fill initial image */
-    for(i = 1; i <  my_height + 1; i++)
-        for(j = 1; j < my_width + 1; j++)
+    for(i = 1; i <  my_height_1; i++)
+        for(j = 1; j < my_width_1; j++)
             my_image_before[i][j] = rand() % 256;
 
 
 /* Set edges as -1 for better checking(can be removed) */
 /////////////////////////////////////////////////////////////
 
-    for(i = 0; i < my_height + 2; i++){
+    for(i = 0; i < my_height_2; i++){
         my_image_before[i][0] = -1;
         my_image_before[i][my_width + 1] = -1;
     }
 
-    for(j = 0; j < my_width + 2; j++){
+    for(j = 0; j < my_width_2; j++){
         my_image_before[0][j] = -1;
-        my_image_before[my_height + 1][j] = -1;
+        my_image_before[my_height_1][j] = -1;
     }
 
 //////////////////////////////////////////////////////////////
 
     /* Allocate after image */
-    my_image_after = malloc((my_height + 2) * sizeof(int*));
+    my_image_after = malloc((my_height_2) * sizeof(int*));
     if(my_image_after == NULL)
         MPI_Abort(MPI_COMM_WORLD,error);
 
     /* Allocate a contiguous array */
-    my_image_after[0] = malloc((my_height + 2) * (my_width + 2) * sizeof(int));
+    my_image_after[0] = malloc((my_height_2) * (my_width_2) * sizeof(int));
     if(my_image_after[0] == NULL)
         MPI_Abort(MPI_COMM_WORLD,error);
 
     /* Fix pointers so we result in having a contiguous array */
-    for(i = 1; i < (my_height + 2); i++)
-        my_image_after[i] = &(my_image_after[0][i*(my_width + 2)]);
+    for(i = 1; i < (my_height_2); i++)
+        my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
 
 
 /* Save image before iretations, for check(can be removed) */
@@ -287,8 +294,8 @@ int main(void){
 
     FILE* my_file = fopen(fileName, "w");
 
-    for(i = 0; i < my_height + 2; i++){
-        for(j = 0; j < my_width + 2; j++){
+    for(i = 0; i < my_height_2; i++){
+        for(j = 0; j < my_width_2; j++){
             fprintf(my_file, "%d\t", my_image_before[i][j]);
         }
         fprintf(my_file, "\n");
@@ -300,7 +307,7 @@ int main(void){
 
     /* Set columns type for sending columns East and West */
     MPI_Datatype column_type;
-    MPI_Type_vector(my_height,1,my_width + 2,MPI_INT,&column_type);
+    MPI_Type_vector(my_height,1,my_width_2,MPI_INT,&column_type);
     MPI_Type_commit(&column_type);
 
     /* Initialize communication with neigbrous */
@@ -319,11 +326,11 @@ int main(void){
 
     /* Receive from all neighbours */
     MPI_Recv_init(&my_image_before[0][1],my_width,MPI_INT,neighbours[N],N,MPI_COMM_WORLD,&recv_requests[N]);
-    MPI_Recv_init(&my_image_before[0][my_width + 1],1,MPI_INT,neighbours[NE],NE,MPI_COMM_WORLD,&recv_requests[NE]);
-    MPI_Recv_init(&my_image_before[1][my_width + 1],1,column_type,neighbours[E],E,MPI_COMM_WORLD,&recv_requests[E]);
-    MPI_Recv_init(&my_image_before[my_height + 1][my_width + 1],1,MPI_INT,neighbours[SE],SE,MPI_COMM_WORLD,&recv_requests[SE]);
-    MPI_Recv_init(&my_image_before[my_height + 1][1],my_width,MPI_INT,neighbours[S],S,MPI_COMM_WORLD,&recv_requests[S]);
-    MPI_Recv_init(&my_image_before[my_height + 1][0],1,MPI_INT,neighbours[SW],SW,MPI_COMM_WORLD,&recv_requests[SW]);
+    MPI_Recv_init(&my_image_before[0][my_width_1],1,MPI_INT,neighbours[NE],NE,MPI_COMM_WORLD,&recv_requests[NE]);
+    MPI_Recv_init(&my_image_before[1][my_width_1],1,column_type,neighbours[E],E,MPI_COMM_WORLD,&recv_requests[E]);
+    MPI_Recv_init(&my_image_before[my_height_1][my_width_1],1,MPI_INT,neighbours[SE],SE,MPI_COMM_WORLD,&recv_requests[SE]);
+    MPI_Recv_init(&my_image_before[my_height_1][1],my_width,MPI_INT,neighbours[S],S,MPI_COMM_WORLD,&recv_requests[S]);
+    MPI_Recv_init(&my_image_before[my_height_1][0],1,MPI_INT,neighbours[SW],SW,MPI_COMM_WORLD,&recv_requests[SW]);
     MPI_Recv_init(&my_image_before[1][0],1,column_type,neighbours[W],W,MPI_COMM_WORLD,&recv_requests[W]);
     MPI_Recv_init(&my_image_before[0][0],1,MPI_INT,neighbours[NW],NW,MPI_COMM_WORLD,&recv_requests[NW]);
 
@@ -385,7 +392,7 @@ int main(void){
 
             for(i = 0; i < my_height + 2; i++){
                 for(j = 0; j < my_width + 2; j++){
-                    fprintf(my_file, "%d\t", my_image_before[i][j]);
+                    fprintf(my_file, "%d\t", my_image_after[i][j]);
                 }
                 fprintf(my_file, "\n");
             }
@@ -396,15 +403,31 @@ int main(void){
         MPI_Waitall(NUM_NEIHGBOURS,send_requests,MPI_STATUS_IGNORE);
 
         /* In the next loop perform convolution to the new image */
-        tmp_ptr = (int*)&my_image_before[0];
+        tmp_ptr = my_image_before[0];
 
-        for(i = 0; i < my_height + 2; i++){
-            my_image_before[i] = (int*)&my_image_after[i];
+        my_image_before[0] = my_image_after[0];
+        for(i = 1; i < my_height_2; i++){
+            my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
         } // End for
 
         my_image_after[0] = tmp_ptr;
-        for(i = 1; i < (my_height + 2); i++)
-            my_image_after[i] = &(tmp_ptr[i*(my_width + 2)]);
+        for(i = 1; i < (my_height_2); i++)
+            my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+
+        /* Print new image before == after */
+        sprintf(fileName,"File%dC",my_rank);
+
+        my_file = fopen(fileName, "w");
+
+        for(i = 0; i < my_height + 2; i++){
+            for(j = 0; j < my_width + 2; j++){
+                fprintf(my_file, "%d\t", my_image_before[i][j]);
+            }
+            fprintf(my_file, "\n");
+        }
+
+        fclose(my_file);
+
     } // End of iter
 
     /* Free memory */
