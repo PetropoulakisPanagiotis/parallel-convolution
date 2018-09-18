@@ -14,6 +14,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <errno.h>
+#include <math.h>
 
 #include "utils.h"
 
@@ -24,11 +26,11 @@
 /* Failure: -1               */
 int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
     char* num; // Seperating values from input
-    size_t buff_size = 50; // For getline
     char* line; // For getline
+    size_t buff_size = 50; // Initial buffer size
+    int total_sum = 0, line_sum; // Sum of filter values(for normalization) - Sum per line
     int i, j, error;
-    int sum = 0; // sum of filter values for normalization
-
+    
     /* Allocate memory for line buffer */
     line = malloc(sizeof(char) * buff_size);
     if(line == NULL)
@@ -36,41 +38,50 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
 
     printf("Please enter the matrix of filter(%d x %d). Seperate lines with enter\n", FILTER_SIZE,FILTER_SIZE);
 
-    /* Scan filter, receive one line each time */
+    /* Scan filter - Receive one line each time */
 	for(i = 0; i < FILTER_SIZE; i++){
-        int line_sum = 0; // sum of current line's integers
+        line_sum = 0; // Sum of current line's integers
 
 		error = getline(&line, &buff_size,stdin);
         if(error == -1){
+            printf("An error occured. Try again later - read_filter(getline)");
             free(line);
             return -1;
         }
 
-		line = strtok(line,"\n"); /* Discard \n */
-		num = strtok(line," \n\t"); /* Get first number */
+		line = strtok(line,"\n"); // Discard \n
+		num = strtok(line," \n\t"); // Get first number
 
         j = 0; /* Count number of integers scanned from input */
 
-        while(j < FILTER_SIZE){ /* Get all integers */
+        while(j < FILTER_SIZE){ // Get all integers
 
             /* Atoi on error returns 0, so we avoid the case when 0 is found */
             /* in order to know when 0 or invalid value was given            */
             if(!strcmp(num,"0"))
-                filter[i][j] = (double)0;
+                filter[i][j] = 0;
             else{
                 filter[i][j] = (double)atoi(num);
-                if(filter[i][j] == (double)0 || filter[i][j] > FILTER_MAX_VALUE || filter[i][j] < FILTER_MIN_VALUE) /* If true, invalid value was given */
+                
+                /* Atoi error */
+                if(filter[i][j] == 0){
+                    printf("An error occured. Try again later - read_filter(atoi)");
+                    free(line);
+                    return -1;
+                }
+
+                if(filter[i][j] > FILTER_MAX_VALUE || filter[i][j] < FILTER_MIN_VALUE) // If true, invalid value was given
                     break;
             }
 
             line_sum += (int)filter[i][j];
 
-			num = strtok(NULL," \n\t"); /* Get the next number */
+			num = strtok(NULL," \n\t"); // Get the next number 
 			if(num == NULL)
 				break;
 
             j++;
-		} /* End while */
+		} // End while
 
         /* Check if line given and all integers read were valid */
 		if(j + 1 != FILTER_SIZE){
@@ -78,23 +89,26 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
 			i--;
 		}
         else
-            sum += line_sum; // line was valid, add sum
-	} /* End for */
+            total_sum += line_sum; // Line was valid, add it in total sum
+	} // End for
+    
+    /* Print given and normalized filters */
 
-    printf("GIVEN FILTER: \n");
-    for(int i = 0; i < FILTER_SIZE; i++){
-        for(int j = 0; j < FILTER_SIZE; j++){
+    printf("\nGIVEN FILTER: \n");
+    for(i = 0; i < FILTER_SIZE; i++){
+        for(j = 0; j < FILTER_SIZE; j++){
             printf("%d ",(int)filter[i][j]);
-            if(sum != 0 && sum != 1) // WILL CHANGE LATER, JUST FOR PRINTING
-                filter[i][j] /= (float)sum;
+            
+            /* Normalize filter */
+            filter[i][j] = ceilf((filter[i][j] / (double)total_sum) * 100) / 100;
         }
         puts("");
     }
 
     printf("NORMALIZED FILTER: \n");
-    for(int i = 0; i < FILTER_SIZE; i++){
-        for(int j = 0; j < FILTER_SIZE; j++){
-            printf("%f ",filter[i][j]);
+    for(i = 0; i < FILTER_SIZE; i++){
+        for(j = 0; j < FILTER_SIZE; j++){
+            printf("%.2f ",filter[i][j]);
         }
         puts("");
     }
@@ -104,19 +118,24 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
     return 0;
 }
 
-/* Read parameters for the program */
-/* Success: 0                      */
-/* Failure: 1                      */
+/* Read arguments for convolution */
+/* Success: 0                     */
+/* Failure: -1                    */
 int read_user_input(Args_type* args, int procs_per_line){
     int error = 0;
     int i, input;
     char buff[LINE_MAX];
     char *end;
 
-    /* Check pointer given */
+    /* Check parameters */
     if(args == NULL){
-        printf("Please try again later. NULL pointer(read_user_input)\n");
-        return 1;
+        printf("An error occured. Try again later - read_user_input(NULL args)");
+        return -1;
+    }
+
+    if(procs_per_line <= 0){
+        printf("An error occured. Try again later - read_user_input(procs_per_line)");
+        return -1;
     }
 
     printf("Welcome to parallel convolution program.\n\n");
@@ -146,9 +165,9 @@ int read_user_input(Args_type* args, int procs_per_line){
             case 4:
                 printf("Enter the number of iterations:");
                 break;
-        } /* End switch */
+        } // End switch
 
-        /* Check imput - read int */
+        /* Check imput */
         while(end != buff + strlen(buff)){
 
             /* Read line */
@@ -160,23 +179,29 @@ int read_user_input(Args_type* args, int procs_per_line){
             /* Empty line */
             if(buff[0] == '\n'){
                 printf("Please enter a value\n\n");
-                end = NULL; /* Reset end */
-                i -= 1; /* Repeat previous messages */
+                end = NULL; // Reset end
+                i -= 1; // Repeat previous messages
                 break;
             }
 
             /* Remove \n */
             buff[strlen(buff) - 1] = 0;
 
+            errno = 0; //reset errno before call 
+
             /* Convert line to integer */
             input = strtol(buff,&end,10);
+            if(input == 0 && errno != 0){
+                printf("An error occured. Try again later - read_user_input(strtol)");
+                return -1;
+            }
 
             /* Check for errors - set parameters */
             switch(i){
                 case 0:
                     if(end != buff + strlen(buff) || ((input != 0 && input != 1) || buff[0] == '\n')){
                         printf("Please enter valid value for image type(0 or 1):");
-                        end = NULL; /* Reset end */
+                        end = NULL; // Reset end
                     }
                     else
                         args->image_type = input;
@@ -216,12 +241,12 @@ int read_user_input(Args_type* args, int procs_per_line){
                     else
                         args->iterations = input;
                     break;
-            } /* End switch */
+            } // End switch
         } // End while
 
         /* Reset end */
         end = NULL;
-    } /* End for */
+    } // End for
 
     /* Read filter */
     error = read_filter(args->filter);

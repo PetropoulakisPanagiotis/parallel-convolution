@@ -111,7 +111,7 @@ int main(void){
     /* neighbours of each process, since most of them wont have 8 neighbours */
     /* (occupying cells at the edges) */
 
-    int neighbours[NUM_NEIHGBOURS]; // all neighbours of process
+    int neighbours[NUM_NEIGHBOURS]; // all neighbours of process
 
     /*
        0 1 2
@@ -311,8 +311,8 @@ int main(void){
     MPI_Type_commit(&column_type);
 
     /* Initialize communication with neigbrous */
-    MPI_Request send_requests[NUM_NEIHGBOURS];
-    MPI_Request recv_requests[NUM_NEIHGBOURS];
+    MPI_Request send_requests[NUM_NEIGHBOURS];
+    MPI_Request recv_requests[NUM_NEIGHBOURS];
 
     /* Send to each neighbour, tagging it with the opposite direction of the receiving process(eg N->S, SW -> NE) */
     MPI_Send_init(&my_image_before[1][1],my_width,MPI_INT,neighbours[N],S,MPI_COMM_WORLD,&send_requests[N]);
@@ -338,7 +338,7 @@ int main(void){
     for(iter = 0; iter < my_args.iterations; iter++){
 
         /* Start sending my pixels/non-blocking */
-        MPI_Startall(NUM_NEIHGBOURS,send_requests);
+        MPI_Startall(NUM_NEIGHBOURS,send_requests);
 
         //////////////////////////////////
         /* Convolute inner pixels first */
@@ -371,13 +371,13 @@ int main(void){
 
 
         /* Start receiving neighbours pixels/non-blocking */
-        MPI_Startall(NUM_NEIHGBOURS,recv_requests);
+        MPI_Startall(NUM_NEIGHBOURS,recv_requests);
 
         MPI_Status recv_stat;
 
         /* Keep receiving from all neighbours */
-        for(k = 0; k < NUM_NEIHGBOURS; k++){
-            MPI_Waitany(NUM_NEIHGBOURS,recv_requests,&index,&recv_stat);
+        for(k = 0; k < NUM_NEIGHBOURS; k++){
+            MPI_Waitany(NUM_NEIGHBOURS,recv_requests,&index,&recv_stat);
             printf("rank %d\t src: %d\t tag: %d\n",my_rank,recv_stat.MPI_SOURCE,recv_stat.MPI_TAG);
         } // End for
 
@@ -400,7 +400,7 @@ int main(void){
             fclose(my_file);
 
         /* Wait all pixles to be send before to procceeding to the next loop */
-        MPI_Waitall(NUM_NEIHGBOURS,send_requests,MPI_STATUS_IGNORE);
+        MPI_Waitall(NUM_NEIGHBOURS,send_requests,MPI_STATUS_IGNORE);
 
         /* In the next loop perform convolution to the new image */
         tmp_ptr = my_image_before[0];
