@@ -44,3 +44,4 @@ functions MPI_ το να ελέγεις για success δεν έχει νόημ�
 - outer done minimum έλεγχος 5 Pixels ανά ομάδα
 - mpiexec -n 4 valgrind --leak-check=full ./filter --> Προβλημα με vector column type
 - Έχει και ένα μικρό θέμα με το free το image_before image_after ενώ κάνει σωστά swapp με το valgrind το παρατήρησα. Δεν φένετε γιατί σχολίασα τις γραμμές, προέχει το πάνω
+- btw έσβησα τον κώδικα(όλα τα ifs και τα send init) και δεν έχει ερρορς αρα κατι παιζει μέσα, δηλαδή μεχρι commit και αμέσως τα frees είναι κομπλέ 
