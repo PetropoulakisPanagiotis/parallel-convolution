@@ -137,7 +137,7 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
 /* Failure: -1                    */
 int read_user_input(Args_type* args, int procs_per_line){
     int error = 0;
-    int i, input;
+    int i, input, stop;
     char buff[LINE_MAX];
     char *end;
 
@@ -180,9 +180,11 @@ int read_user_input(Args_type* args, int procs_per_line){
                 printf("Enter the number of iterations:");
                 break;
         } // End switch
+        
+        stop = 0;
 
         /* Check imput */
-        while(end != buff + strlen(buff)){
+        while(!stop){
 
             /* Read line */
             if(!fgets(buff, sizeof(buff), stdin)){
@@ -217,8 +219,10 @@ int read_user_input(Args_type* args, int procs_per_line){
                         printf("Please enter valid value for image type(0 or 1):");
                         end = NULL; // Reset end
                     }
-                    else
+                    else{
                         args->image_type = input;
+                        stop = 1;
+                    }
                     break;
 
                 case 1:
@@ -226,8 +230,10 @@ int read_user_input(Args_type* args, int procs_per_line){
                         printf("Please enter valid value for image width(equal or greater than %d and up to %d pixels):", procs_per_line, MAX_WIDTH);
                         end = NULL;
                     }
-                    else
+                    else{
                         args->image_width = input;
+                        stop = 1;
+                    }
                     break;
 
                 case 2:
@@ -235,8 +241,10 @@ int read_user_input(Args_type* args, int procs_per_line){
                         printf("Please enter valid value for image height(equal or greater than %d and up to %d pixels):", procs_per_line, MAX_HEIGHT);
                         end = NULL;
                     }
-                    else
+                    else{
                         args->image_height = input;
+                        stop = 1;
+                    }
                     break;
 
                 case 3:
@@ -244,16 +252,20 @@ int read_user_input(Args_type* args, int procs_per_line){
                         printf("Please enter valid value for seed(positive and up to %d):", MAX_SEED);
                         end = NULL;
                     }
-                    else
+                    else{
                         args->image_seed = input;
+                        stop = 1;
+                    }
                     break;
                 case 4:
                     if(end != buff + strlen(buff) || input < 0 || input > MAX_ITERATIONS){
                         printf("Please enter valid value for iterations(positive and up to %d):", MAX_ITERATIONS);
                         end = NULL;
                     }
-                    else
+                    else{
                         args->iterations = input;
+                        stop = 1;
+                    }
                     break;
             } // End switch
         } // End while

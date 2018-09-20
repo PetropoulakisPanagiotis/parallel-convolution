@@ -290,7 +290,7 @@ int main(void){
 
     /* Set columns type for sending columns East and West */
     MPI_Datatype column_type;
-    MPI_Type_vector(my_height,1, my_width_2, MPI_INT, &column_type);
+    MPI_Type_vector(my_height, 1, my_width_2, MPI_INT, &column_type);
     MPI_Type_commit(&column_type);
 
     /* Initialize communication with neighbours */
@@ -431,15 +431,15 @@ int main(void){
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
             /* In the next loop perform convolution to the new image  - swapp images */
-            tmp_ptr = my_image_before[0];
+            //tmp_ptr = my_image_before[0];
 
-            my_image_before[0] = my_image_after[0];
-            for(i = 1; i < my_height_2; i++)
-                my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+           //// my_image_before[0] = my_image_after[0];
+           // for(i = 1; i < my_height_2; i++)
+              //  my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
 
-            my_image_after[0] = tmp_ptr;
-            for(i = 1; i < (my_height_2); i++)
-                my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+           // my_image_after[0] = tmp_ptr;
+           // for(i = 1; i < (my_height_2); i++)
+              //  my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
 
             /*
             sprintf(fileName,"File%dC",my_rank);
@@ -571,15 +571,15 @@ int main(void){
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
             /* In the next loop perform convolution to the new image  - swapp images */
-            tmp_ptr = my_image_before[0];
+            //tmp_ptr = my_image_before[0];
 
-            my_image_before[0] = my_image_after[0];
-            for(i = 1; i < my_height_2; i++)
-                my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+           // my_image_before[0] = my_image_after[0];
+           //// for(i = 1; i < my_height_2; i++)
+            //    my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
 
-            my_image_after[0] = tmp_ptr;
-            for(i = 1; i < (my_height_2); i++)
-                my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+           // my_image_after[0] = tmp_ptr;
+           // for(i = 1; i < (my_height_2); i++)
+            //    my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
 
             /*
             sprintf(fileName,"File%dC",my_rank);
@@ -709,15 +709,15 @@ int main(void){
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
             /* In the next loop perform convolution to the new image  - swapp images */
-            tmp_ptr = my_image_before[0];
+            //tmp_ptr = my_image_before[0];
 
-            my_image_before[0] = my_image_after[0];
-            for(i = 1; i < my_height_2; i++)
-                my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+           // my_image_before[0] = my_image_after[0];
+           // for(i = 1; i < my_height_2; i++)
+           //     my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
 
-            my_image_after[0] = tmp_ptr;
-            for(i = 1; i < (my_height_2); i++)
-                my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+           // my_image_after[0] = tmp_ptr;
+           // for(i = 1; i < (my_height_2); i++)
+            //    my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
 
             /*
             sprintf(fileName,"File%dC",my_rank);
@@ -828,7 +828,7 @@ int main(void){
                 MPI_Waitany(NUM_NEIGHBOURS, recv_requests, &index, &recv_stat);
                 //printf("rank %d\t src: %d\t tag: %d\n",my_rank,recv_stat.MPI_SOURCE,recv_stat.MPI_TAG);
             } // End for
-
+/*
                 char fileName[10];
                 sprintf(fileName,"File%dB",my_rank);
 
@@ -842,20 +842,20 @@ int main(void){
                 }
 
                 fclose(my_file);
-
+*/
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
             /* In the next loop perform convolution to the new image  - swapp images */
-            tmp_ptr = my_image_before[0];
+           // tmp_ptr = my_image_before[0];
 
-            my_image_before[0] = my_image_after[0];
-            for(i = 1; i < my_height_2; i++)
-                my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
-
-            my_image_after[0] = tmp_ptr;
-            for(i = 1; i < (my_height_2); i++)
-                my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+           // my_image_before[0] = my_image_after[0];
+           //// for(i = 1; i < my_height_2; i++)
+            //    my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+//
+          //  my_image_after[0] = tmp_ptr;
+         //   for(i = 1; i < (my_height_2); i++)
+          //      my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
 
             /*
             sprintf(fileName,"File%dC",my_rank);
@@ -958,15 +958,15 @@ int main(void){
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
             /* In the next loop perform convolution to the new image  - swapp images */
-            tmp_ptr = my_image_before[0];
+           // tmp_ptr = my_image_before[0];
 
-            my_image_before[0] = my_image_after[0];
-            for(i = 1; i < my_height_2; i++)
-                my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+           // my_image_before[0] = my_image_after[0];
+           // for(i = 1; i < my_height_2; i++)
+            //    my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
 
-            my_image_after[0] = tmp_ptr;
-            for(i = 1; i < (my_height_2); i++)
-                my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+           // my_image_after[0] = tmp_ptr;
+           // for(i = 1; i < (my_height_2); i++)
+            //    my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
 
             /*
             sprintf(fileName,"File%dC",my_rank);
@@ -1063,15 +1063,15 @@ int main(void){
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
             /* In the next loop perform convolution to the new image  - swapp images */
-            tmp_ptr = my_image_before[0];
+           // tmp_ptr = my_image_before[0];
 
-            my_image_before[0] = my_image_after[0];
-            for(i = 1; i < my_height_2; i++)
-                my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+           // my_image_before[0] = my_image_after[0];
+            //for(i = 1; i < my_height_2; i++)
+            //    my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
 
-            my_image_after[0] = tmp_ptr;
-            for(i = 1; i < (my_height_2); i++)
-                my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+           // my_image_after[0] = tmp_ptr;
+           // for(i = 1; i < (my_height_2); i++)
+             //   my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
 
             /*
             sprintf(fileName,"File%dC",my_rank);
@@ -1167,15 +1167,15 @@ int main(void){
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
             /* In the next loop perform convolution to the new image  - swapp images */
-            tmp_ptr = my_image_before[0];
+           // tmp_ptr = my_image_before[0];
 
-            my_image_before[0] = my_image_after[0];
-            for(i = 1; i < my_height_2; i++)
-                my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+           // my_image_before[0] = my_image_after[0];
+           // for(i = 1; i < my_height_2; i++)
+             //   my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
 
-            my_image_after[0] = tmp_ptr;
-            for(i = 1; i < (my_height_2); i++)
-                my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+          //  my_image_after[0] = tmp_ptr;
+           // for(i = 1; i < (my_height_2); i++)
+             //   my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
 
             /*
             sprintf(fileName,"File%dC",my_rank);
@@ -1195,7 +1195,7 @@ int main(void){
         } // End of iter
     } // End if g)
     /* Left column processes - except from first and last process in this column - active neighbours N, NE, E, SE, S */
-    else if(my_rank >(procs_per_line * procs_per_line_1) && my_rank < comm_size - procs_per_line){
+    else if(my_rank % procs_per_line == 0){
 
         /* Perform convolution */
         for(iter = 0; iter < my_args.iterations; iter++){
@@ -1272,15 +1272,15 @@ int main(void){
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
             /* In the next loop perform convolution to the new image  - swapp images */
-            tmp_ptr = my_image_before[0];
+            //tmp_ptr = my_image_before[0];
 
-            my_image_before[0] = my_image_after[0];
-            for(i = 1; i < my_height_2; i++)
-                my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+          //  my_image_before[0] = my_image_after[0];
+          //  for(i = 1; i < my_height_2; i++)
+           //     my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
 
-            my_image_after[0] = tmp_ptr;
-            for(i = 1; i < (my_height_2); i++)
-                my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+          //  my_image_after[0] = tmp_ptr;
+          //  for(i = 1; i < (my_height_2); i++)
+           //     my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
 
             /*
             sprintf(fileName,"File%dC",my_rank);
@@ -1366,16 +1366,17 @@ int main(void){
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
+            
             /* In the next loop perform convolution to the new image  - swapp images */
-            tmp_ptr = my_image_before[0];
+            //tmp_ptr = my_image_before[0];
 
-            my_image_before[0] = my_image_after[0];
-            for(i = 1; i < my_height_2; i++)
-                my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+            //my_image_before[0] = my_image_after[0];
+            //for(i = 1; i < my_height_2; i++)
+              //  my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
 
-            my_image_after[0] = tmp_ptr;
-            for(i = 1; i < (my_height_2); i++)
-                my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+            //my_image_after[0] = tmp_ptr;
+            //for(i = 1; i < (my_height_2); i++)
+              //  my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
 
             /*
             sprintf(fileName,"File%dC",my_rank);
