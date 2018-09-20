@@ -82,7 +82,8 @@ int main(void){
         my_args.height_per_process = my_args.image_height / (int)sqrt(comm_size);
         my_args.height_remaining = my_args.image_height % (int)sqrt(comm_size);
 
-        /*printf("{0}t: %d, w:%d, h:%d, s:%d\nF:%lf %lf %lf %lf %lf %lf %lf %lf %lf\nwp: %d, wr: %d, hp: %d, hr: %d, iter: %d\n",
+        /* Print all arguments found
+        printf("{0}t: %d, w:%d, h:%d, s:%d\nF:%lf %lf %lf %lf %lf %lf %lf %lf %lf\nwp: %d, wr: %d, hp: %d, hr: %d, iter: %d\n",
         my_args.image_type,my_args.image_width,my_args.image_height,my_args.image_seed,
         my_args.filter[0][0],my_args.filter[0][1],my_args.filter[0][2],my_args.filter[1][0],my_args.filter[1][1],
         my_args.filter[1][2],my_args.filter[2][0],my_args.filter[2][1],my_args.filter[2][2],my_args.width_per_process,
@@ -90,15 +91,15 @@ int main(void){
         */
 
         /* Send arguments in other proccesses */
-        for(i = 1; i < comm_size; i++) 
+        for(i = 1; i < comm_size; i++)
             MPI_Send(&my_args, 1, args_type, i, 1, MPI_COMM_WORLD);
     }
     else{
 
         /* Get arguments from process 0*/
         MPI_Recv(&my_args, 1, args_type, 0, 1, MPI_COMM_WORLD, &stat);
-       
-        /*
+
+        /* Print arguments received
         printf("{%d}t: %d, w:%d, h:%d, s:%d\nF:%lf %lf %lf %lf %lf %lf %lf %lf %lf\nwp: %d, wr: %d, hp: %d, hr: %d, iter: %d\n",
         my_rank,my_args.image_type,my_args.image_width,my_args.image_height,my_args.image_seed,
         my_args.filter[0][0],my_args.filter[0][1],my_args.filter[0][2],my_args.filter[1][0],my_args.filter[1][1],
@@ -218,7 +219,7 @@ int main(void){
 
     my_width_2 = my_width + 2;
     my_height_2 = my_height + 2;
-    
+
     /* For random images, set the seed differently to each process, in order */
     /* to have a fully random image and not repetitive cells                 */
 
@@ -249,7 +250,7 @@ int main(void){
             my_image_before[i][j] = rand() % 256;
 
 
-    /* Set edges */
+    /* Set edges(hallow points, -1 for now, until neighbours send theirs) */
     for(i = 0; i < my_height_2; i++){
         my_image_before[i][0] = -1;
         my_image_before[i][my_width + 1] = -1;
@@ -316,10 +317,11 @@ int main(void){
     MPI_Recv_init(&my_image_before[my_height_1][0], 1,MPI_INT,neighbours[SW],SW,MPI_COMM_WORLD,&recv_requests[SW]);
     MPI_Recv_init(&my_image_before[1][0], 1, column_type, neighbours[W], W, MPI_COMM_WORLD, &recv_requests[W]);
     MPI_Recv_init(&my_image_before[0][0], 1, MPI_INT, neighbours[NW], NW, MPI_COMM_WORLD, &recv_requests[NW]);
-   
+
+    printf("[%d][%d] Pass1\n",my_rank,getpid());
     /* Left upper process - active neighbours E, SE, S */
     if(my_rank == 0){
-        
+
         /* Perform convolution */
         for(iter = 0; iter < my_args.iterations; iter++){
 
@@ -343,20 +345,20 @@ int main(void){
                                             my_image_before[i + 1][j - 1] * my_args.filter[2][0] +
                                             my_image_before[i][j - 1] * my_args.filter[2][0] +
                                             my_image_before[i - 1][j - 1] * my_args.filter[0][0]);
-                    
+
                     /* Truncated unexpected values */
-                    if(my_image_after[i][j] < 0) 
+                    if(my_image_after[i][j] < 0)
                         my_image_after[i][j] = 0;
                     else if(my_image_after[i][j] > 255)
                         my_image_after[i][j] = 255;
                 } // End for
-            } // End for 
+            } // End for
 
             //////////////////////////////////////////////
             /* Convolute outer independent pixels first */
             //////////////////////////////////////////////
-            
-            /* Left column - except from upper and lower left corners */
+
+            /* Left column - except upper and lower left corners */
             for(i = 2; i < my_height; i++){
                 my_image_after[i][1] = (int)(my_image_before[i][1] * my_args.filter[1][1] +
                                         my_image_before[i - 1][1] * my_args.filter[0][1] +
@@ -364,27 +366,27 @@ int main(void){
                                         my_image_before[i][2] * my_args.filter[1][2] +
                                         my_image_before[i + 1][2] * my_args.filter[2][2] +
                                         my_image_before[i + 1][1] * my_args.filter[2][1]);
-                    
+
                 /* Truncated unexpected values */
-                if(my_image_after[i][1] < 0) 
+                if(my_image_after[i][1] < 0)
                     my_image_after[i][1] = 0;
                 else if(my_image_after[i][1] > 255)
                     my_image_after[i][1] = 255;
             } // End for
-            
+
             /* Left upper corner */
             my_image_after[1][1] = (int)(my_image_before[1][1] * my_args.filter[1][1] +
                                     my_image_before[1][2] * my_args.filter[1][2] +
                                     my_image_before[2][2] * my_args.filter[2][2] +
                                     my_image_before[2][1] * my_args.filter[2][1]);
-                    
+
             /* Truncated unexpected values */
-            if(my_image_after[1][1] < 0) 
+            if(my_image_after[1][1] < 0)
                 my_image_after[1][1] = 0;
             else if(my_image_after[1][1] > 255)
                 my_image_after[1][1] = 255;
-            
-            /* First line - execpt from left and right upper corners */
+
+            /* First line - except left and right upper corners */
             for(j = 2; j < my_width; j++){
                 my_image_after[1][j] = (int)(my_image_before[1][j] * my_args.filter[1][1] +
                                         my_image_before[1][j + 1] * my_args.filter[1][2] +
@@ -392,14 +394,14 @@ int main(void){
                                         my_image_before[2][j] * my_args.filter[2][1] +
                                         my_image_before[2][j - 1] * my_args.filter[2][0] +
                                         my_image_before[1][j - 1] * my_args.filter[2][0]);
-                
+
                 /* Truncated unexpected values */
-                if(my_image_after[1][j] < 0) 
+                if(my_image_after[1][j] < 0)
                     my_image_after[1][j] = 0;
                 else if(my_image_after[1][j] > 255)
                     my_image_after[1][j] = 255;
             } // End for
-                
+
             /* Start receiving neighbours pixels/non-blocking */
             MPI_Startall(NUM_NEIGHBOURS, recv_requests);
 
@@ -460,7 +462,7 @@ int main(void){
     } // End if a)
     /* Right upper process - active neighbours S, SW, W */
     else if(my_rank == procs_per_line_1){
-        
+
         /* Perform convolution */
         for(iter = 0; iter < my_args.iterations; iter++){
 
@@ -484,19 +486,19 @@ int main(void){
                                             my_image_before[i + 1][j - 1] * my_args.filter[2][0] +
                                             my_image_before[i][j - 1] * my_args.filter[2][0] +
                                             my_image_before[i - 1][j - 1] * my_args.filter[0][0]);
-                    
+
                     /* Truncated unexpected values */
-                    if(my_image_after[i][j] < 0) 
+                    if(my_image_after[i][j] < 0)
                         my_image_after[i][j] = 0;
                     else if(my_image_after[i][j] > 255)
                         my_image_after[i][j] = 255;
                 } // End for
-            } // End for 
+            } // End for
 
             //////////////////////////////////////////////
             /* Convolute outer independent pixels first */
             //////////////////////////////////////////////
-            
+
             /* Right column - except from upper and lower right corners */
             for(i = 2; i < my_height; i++){
                 my_image_after[i][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
@@ -505,27 +507,27 @@ int main(void){
                                                 my_image_before[i + 1][my_width - 1] * my_args.filter[2][0] +
                                                 my_image_before[i][my_width - 1] * my_args.filter[2][0] +
                                                 my_image_before[i - 1][my_width - 1] * my_args.filter[0][0]);
-                    
+
                 /* Truncated unexpected values */
-                if(my_image_after[i][my_width] < 0) 
+                if(my_image_after[i][my_width] < 0)
                     my_image_after[i][my_width] = 0;
                 else if(my_image_after[i][my_width] > 255)
                     my_image_after[i][my_width] = 255;
             } // End for
-            
+
             /* Right upper corner */
             my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
                                             my_image_before[2][my_width] * my_args.filter[2][1] +
                                             my_image_before[2][my_width - 1] * my_args.filter[2][0] +
                                             my_image_before[1][my_width - 1] * my_args.filter[2][0]);
-                    
+
             /* Truncated unexpected values */
-            if(my_image_after[1][my_width] < 0) 
+            if(my_image_after[1][my_width] < 0)
                 my_image_after[1][my_width] = 0;
             else if(my_image_after[1][my_width] > 255)
                 my_image_after[1][my_width] = 255;
-            
-            /* First line - execpt from left and right upper corners */
+
+            /* First line - except left and right upper corners */
             for(j = 2; j < my_width; j++){
                 my_image_after[1][j] = (int)(my_image_before[1][j] * my_args.filter[1][1] +
                                         my_image_before[1][j + 1] * my_args.filter[1][2] +
@@ -533,14 +535,14 @@ int main(void){
                                         my_image_before[2][j] * my_args.filter[2][1] +
                                         my_image_before[2][j - 1] * my_args.filter[2][0] +
                                         my_image_before[1][j - 1] * my_args.filter[2][0]);
-                
+
                 /* Truncated unexpected values */
-                if(my_image_after[1][j] < 0) 
+                if(my_image_after[1][j] < 0)
                     my_image_after[1][j] = 0;
                 else if(my_image_after[1][j] > 255)
                     my_image_after[1][j] = 255;
             } // End for
-                
+
             /* Start receiving neighbours pixels/non-blocking */
             MPI_Startall(NUM_NEIGHBOURS, recv_requests);
 
@@ -624,19 +626,19 @@ int main(void){
                                             my_image_before[i + 1][j - 1] * my_args.filter[2][0] +
                                             my_image_before[i][j - 1] * my_args.filter[2][0] +
                                             my_image_before[i - 1][j - 1] * my_args.filter[0][0]);
-                    
+
                     /* Truncated unexpected values */
-                    if(my_image_after[i][j] < 0) 
+                    if(my_image_after[i][j] < 0)
                         my_image_after[i][j] = 0;
                     else if(my_image_after[i][j] > 255)
                         my_image_after[i][j] = 255;
                 } // End for
-            } // End for 
+            } // End for
 
             //////////////////////////////////////////////
             /* Convolute outer independent pixels first */
             //////////////////////////////////////////////
-            
+
             /* Right column - except from upper and lower right corners */
             for(i = 2; i < my_height; i++){
                 my_image_after[i][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
@@ -645,26 +647,26 @@ int main(void){
                                                 my_image_before[i + 1][my_width - 1] * my_args.filter[2][0] +
                                                 my_image_before[i][my_width - 1] * my_args.filter[2][0] +
                                                 my_image_before[i - 1][my_width - 1] * my_args.filter[0][0]);
-                    
+
                 /* Truncated unexpected values */
-                if(my_image_after[i][my_width] < 0) 
+                if(my_image_after[i][my_width] < 0)
                     my_image_after[i][my_width] = 0;
                 else if(my_image_after[i][my_width] > 255)
                     my_image_after[i][my_width] = 255;
             } // End for
-            
+            printf("[%d] Pass2\n",my_rank);
             /* Right lower corner */
             my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
                                                     my_image_before[my_height - 1][my_width] * my_args.filter[0][1] +
-                                                    my_image_before[my_width][my_width - 1] * my_args.filter[2][0] +
-                                                    my_image_before[my_width - 1][my_width - 1] * my_args.filter[0][0]);
-         
+                                                    my_image_before[my_height][my_width - 1] * my_args.filter[1][0] +
+                                                    my_image_before[my_height - 1][my_width - 1] * my_args.filter[0][0]);
+
+            printf("[%d] Pass3\n",my_rank);
             /* Truncated unexpected values */
-            if(my_image_after[my_height][my_width] < 0) 
+            if(my_image_after[my_height][my_width] < 0)
                 my_image_after[my_height][my_width] = 0;
             else if(my_image_after[my_height][my_width] > 255)
                 my_image_after[my_height][my_width] = 255;
-            
             /* Last line - except from left and right lower corners */
             for(j = 2; j < my_width; j++){
                 my_image_after[my_height][j] = (int)(my_image_before[my_height][j] * my_args.filter[1][1] +
@@ -672,14 +674,14 @@ int main(void){
                                                 my_image_before[my_height - 1][j + 1] * my_args.filter[0][2] +
                                                 my_image_before[my_height][j + 1] * my_args.filter[1][2] +
                                                 my_image_before[my_height][j - 1] * my_args.filter[2][0] +
-                                                my_image_before[my_height - 1][j - 1] * my_args.filter[0][0]);                
+                                                my_image_before[my_height - 1][j - 1] * my_args.filter[0][0]);
                 /* Truncated unexpected values */
-                if(my_image_after[my_height][j] < 0) 
+                if(my_image_after[my_height][j] < 0)
                     my_image_after[my_height][j] = 0;
                 else if(my_image_after[my_height][j] > 255)
                     my_image_after[my_height][j] = 255;
             } // End for
-                
+
             /* Start receiving neighbours pixels/non-blocking */
             MPI_Startall(NUM_NEIGHBOURS, recv_requests);
 
@@ -762,19 +764,19 @@ int main(void){
                                             my_image_before[i + 1][j - 1] * my_args.filter[2][0] +
                                             my_image_before[i][j - 1] * my_args.filter[2][0] +
                                             my_image_before[i - 1][j - 1] * my_args.filter[0][0]);
-                    
+
                     /* Truncated unexpected values */
-                    if(my_image_after[i][j] < 0) 
+                    if(my_image_after[i][j] < 0)
                         my_image_after[i][j] = 0;
                     else if(my_image_after[i][j] > 255)
                         my_image_after[i][j] = 255;
                 } // End for
-            } // End for 
+            } // End for
 
             //////////////////////////////////////////////
             /* Convolute outer independent pixels first */
             //////////////////////////////////////////////
-            
+
             /* Left column - except from upper and lower left corners */
             for(i = 2; i < my_height; i++){
                 my_image_after[i][1] = (int)(my_image_before[i][1] * my_args.filter[1][1] +
@@ -783,13 +785,13 @@ int main(void){
                                         my_image_before[i][2] * my_args.filter[1][2] +
                                         my_image_before[i + 1][2] * my_args.filter[2][2] +
                                         my_image_before[i + 1][1] * my_args.filter[2][1]);
-                    
+
                 /* Truncated unexpected values */
-                if(my_image_after[i][1] < 0) 
+                if(my_image_after[i][1] < 0)
                     my_image_after[i][1] = 0;
                 else if(my_image_after[i][1] > 255)
                     my_image_after[i][1] = 255;
-            } // End for           
+            } // End for
 
             /* Left lower corner */
             my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
@@ -798,11 +800,11 @@ int main(void){
                                             my_image_before[my_height][2] * my_args.filter[1][2]);
 
             /* Truncated unexpected values */
-            if(my_image_after[my_height][my_width] < 0) 
+            if(my_image_after[my_height][1] < 0)
                 my_image_after[my_height][my_width] = 0;
-            else if(my_image_after[my_height][my_width] > 255)
+            else if(my_image_after[my_height][1] > 255)
                 my_image_after[my_height][my_width] = 255;
-            
+
             /* Last line - execpt from left and right lower corners */
             for(j = 2; j < my_width; j++){
                 my_image_after[my_height][j] = (int)(my_image_before[my_height][j] * my_args.filter[1][1] +
@@ -810,14 +812,14 @@ int main(void){
                                                 my_image_before[my_height - 1][j + 1] * my_args.filter[0][2] +
                                                 my_image_before[my_height][j + 1] * my_args.filter[1][2] +
                                                 my_image_before[my_height][j - 1] * my_args.filter[2][0] +
-                                                my_image_before[my_height - 1][j - 1] * my_args.filter[0][0]);                
+                                                my_image_before[my_height - 1][j - 1] * my_args.filter[0][0]);
                 /* Truncated unexpected values */
-                if(my_image_after[my_height][j] < 0) 
+                if(my_image_after[my_height][j] < 0)
                     my_image_after[my_height][j] = 0;
                 else if(my_image_after[my_height][j] > 255)
                     my_image_after[my_height][j] = 255;
             } // End for
-                
+
             /* Start receiving neighbours pixels/non-blocking */
             MPI_Startall(NUM_NEIGHBOURS, recv_requests);
 
@@ -900,19 +902,19 @@ int main(void){
                                             my_image_before[i + 1][j - 1] * my_args.filter[2][0] +
                                             my_image_before[i][j - 1] * my_args.filter[2][0] +
                                             my_image_before[i - 1][j - 1] * my_args.filter[0][0]);
-                    
+
                     /* Truncated unexpected values */
-                    if(my_image_after[i][j] < 0) 
+                    if(my_image_after[i][j] < 0)
                         my_image_after[i][j] = 0;
                     else if(my_image_after[i][j] > 255)
                         my_image_after[i][j] = 255;
                 } // End for
-            } // End for 
+            } // End for
 
             //////////////////////////////////////////////
             /* Convolute outer independent pixels first */
             //////////////////////////////////////////////
-            
+
             /* First line - execpt from left and right upper corners */
             for(j = 2; j < my_width; j++){
                 my_image_after[1][j] = (int)(my_image_before[1][j] * my_args.filter[1][1] +
@@ -921,14 +923,14 @@ int main(void){
                                         my_image_before[2][j] * my_args.filter[2][1] +
                                         my_image_before[2][j - 1] * my_args.filter[2][0] +
                                         my_image_before[1][j - 1] * my_args.filter[2][0]);
-                
+
                 /* Truncated unexpected values */
-                if(my_image_after[1][j] < 0) 
+                if(my_image_after[1][j] < 0)
                     my_image_after[1][j] = 0;
                 else if(my_image_after[1][j] > 255)
                     my_image_after[1][j] = 255;
             } // End for
-                
+
             /* Start receiving neighbours pixels/non-blocking */
             MPI_Startall(NUM_NEIGHBOURS, recv_requests);
 
@@ -1011,19 +1013,19 @@ int main(void){
                                             my_image_before[i + 1][j - 1] * my_args.filter[2][0] +
                                             my_image_before[i][j - 1] * my_args.filter[2][0] +
                                             my_image_before[i - 1][j - 1] * my_args.filter[0][0]);
-                    
+
                     /* Truncated unexpected values */
-                    if(my_image_after[i][j] < 0) 
+                    if(my_image_after[i][j] < 0)
                         my_image_after[i][j] = 0;
                     else if(my_image_after[i][j] > 255)
                         my_image_after[i][j] = 255;
                 } // End for
-            } // End for 
+            } // End for
 
             //////////////////////////////////////////////
             /* Convolute outer independent pixels first */
             //////////////////////////////////////////////
-            
+
             /* Right column - except from upper and lower right corners */
             for(i = 2; i < my_height; i++){
                 my_image_after[i][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
@@ -1032,9 +1034,9 @@ int main(void){
                                                 my_image_before[i + 1][my_width - 1] * my_args.filter[2][0] +
                                                 my_image_before[i][my_width - 1] * my_args.filter[2][0] +
                                                 my_image_before[i - 1][my_width - 1] * my_args.filter[0][0]);
-                    
+
                 /* Truncated unexpected values */
-                if(my_image_after[i][my_width] < 0) 
+                if(my_image_after[i][my_width] < 0)
                     my_image_after[i][my_width] = 0;
                 else if(my_image_after[i][my_width] > 255)
                     my_image_after[i][my_width] = 255;
@@ -1116,19 +1118,19 @@ int main(void){
                                             my_image_before[i + 1][j - 1] * my_args.filter[2][0] +
                                             my_image_before[i][j - 1] * my_args.filter[2][0] +
                                             my_image_before[i - 1][j - 1] * my_args.filter[0][0]);
-                    
+
                     /* Truncated unexpected values */
-                    if(my_image_after[i][j] < 0) 
+                    if(my_image_after[i][j] < 0)
                         my_image_after[i][j] = 0;
                     else if(my_image_after[i][j] > 255)
                         my_image_after[i][j] = 255;
                 } // End for
-            } // End for 
+            } // End for
 
             //////////////////////////////////////////////
             /* Convolute outer independent pixels first */
             //////////////////////////////////////////////
-            
+
             /* Last line - execpt from left and right lower corners */
             for(j = 2; j < my_width; j++){
                 my_image_after[my_height][j] = (int)(my_image_before[my_height][j] * my_args.filter[1][1] +
@@ -1136,9 +1138,9 @@ int main(void){
                                                 my_image_before[my_height - 1][j + 1] * my_args.filter[0][2] +
                                                 my_image_before[my_height][j + 1] * my_args.filter[1][2] +
                                                 my_image_before[my_height][j - 1] * my_args.filter[2][0] +
-                                                my_image_before[my_height - 1][j - 1] * my_args.filter[0][0]);                
+                                                my_image_before[my_height - 1][j - 1] * my_args.filter[0][0]);
                 /* Truncated unexpected values */
-                if(my_image_after[my_height][j] < 0) 
+                if(my_image_after[my_height][j] < 0)
                     my_image_after[my_height][j] = 0;
                 else if(my_image_after[my_height][j] > 255)
                     my_image_after[my_height][j] = 255;
@@ -1220,19 +1222,19 @@ int main(void){
                                             my_image_before[i + 1][j - 1] * my_args.filter[2][0] +
                                             my_image_before[i][j - 1] * my_args.filter[2][0] +
                                             my_image_before[i - 1][j - 1] * my_args.filter[0][0]);
-                    
+
                     /* Truncated unexpected values */
-                    if(my_image_after[i][j] < 0) 
+                    if(my_image_after[i][j] < 0)
                         my_image_after[i][j] = 0;
                     else if(my_image_after[i][j] > 255)
                         my_image_after[i][j] = 255;
                 } // End for
-            } // End for 
+            } // End for
 
             //////////////////////////////////////////////
             /* Convolute outer independent pixels first */
             //////////////////////////////////////////////
-            
+
             /* Left column - except from upper and lower left corners */
             for(i = 2; i < my_height; i++){
                 my_image_after[i][1] = (int)(my_image_before[i][1] * my_args.filter[1][1] +
@@ -1241,13 +1243,13 @@ int main(void){
                                         my_image_before[i][2] * my_args.filter[1][2] +
                                         my_image_before[i + 1][2] * my_args.filter[2][2] +
                                         my_image_before[i + 1][1] * my_args.filter[2][1]);
-                    
+
                 /* Truncated unexpected values */
-                if(my_image_after[i][1] < 0) 
+                if(my_image_after[i][1] < 0)
                     my_image_after[i][1] = 0;
                 else if(my_image_after[i][1] > 255)
                     my_image_after[i][1] = 255;
-            } // End for           
+            } // End for
 
             /* Start receiving neighbours pixels/non-blocking */
             MPI_Startall(NUM_NEIGHBOURS, recv_requests);
@@ -1325,14 +1327,14 @@ int main(void){
                                             my_image_before[i + 1][j - 1] * my_args.filter[2][0] +
                                             my_image_before[i][j - 1] * my_args.filter[2][0] +
                                             my_image_before[i - 1][j - 1] * my_args.filter[0][0]);
-                    
+
                     /* Truncated unexpected values */
-                    if(my_image_after[i][j] < 0) 
+                    if(my_image_after[i][j] < 0)
                         my_image_after[i][j] = 0;
                     if(my_image_after[i][j] > 255)
                         my_image_after[i][j] = 255;
                 } // End for
-            } // End for 
+            } // End for
 
 
             /* Start receiving neighbours pixels/non-blocking */
@@ -1366,7 +1368,7 @@ int main(void){
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
-            
+
             /* In the next loop perform convolution to the new image  - swapp images */
             //tmp_ptr = my_image_before[0];
 
@@ -1394,6 +1396,7 @@ int main(void){
             */
 
         } // End of iter
+
     } // End else i)
 
     /* Free memory */
