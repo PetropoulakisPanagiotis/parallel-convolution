@@ -260,7 +260,6 @@ int main(void){
         my_image_before[my_height_1][j] = -1;
     }
 
-
     /* Allocate an image to save the result */
     my_image_after = malloc((my_height_2) * sizeof(int*));
     if(my_image_after == NULL)
@@ -320,6 +319,7 @@ int main(void){
    
     /* Left upper process - active neighbours E, SE, S */
     if(my_rank == 0){
+        
         /* Perform convolution */
         for(iter = 0; iter < my_args.iterations; iter++){
 
@@ -460,6 +460,7 @@ int main(void){
     } // End if a)
     /* Right upper process - active neighbours S, SW, W */
     else if(my_rank == procs_per_line_1){
+        
         /* Perform convolution */
         for(iter = 0; iter < my_args.iterations; iter++){
 
@@ -599,6 +600,7 @@ int main(void){
     } // End if b)
     /* Right lower process - active neighbours W, NW, N */
     else if(my_rank == comm_size - 1){
+
         /* Perform convolution */
         for(iter = 0; iter < my_args.iterations; iter++){
 
@@ -663,7 +665,7 @@ int main(void){
             else if(my_image_after[my_height][my_width] > 255)
                 my_image_after[my_height][my_width] = 255;
             
-            /* Last line - execpt from left and right lower corners */
+            /* Last line - except from left and right lower corners */
             for(j = 2; j < my_width; j++){
                 my_image_after[my_height][j] = (int)(my_image_before[my_height][j] * my_args.filter[1][1] +
                                                 my_image_before[my_height - 1][j] * my_args.filter[0][1] +
@@ -734,8 +736,9 @@ int main(void){
 
         } // End of iter
     } // End if c)
-    /* Left lower process - active neighbours N, NE, S */
+    /* Left lower process - active neighbours W, NW , N */
     else if(my_rank == comm_size - procs_per_line){
+
         /* Perform convolution */
         for(iter = 0; iter < my_args.iterations; iter++){
 
@@ -772,7 +775,7 @@ int main(void){
             /* Convolute outer independent pixels first */
             //////////////////////////////////////////////
             
-            /* Left column - except from upper and lower right corners */
+            /* Left column - except from upper and lower left corners */
             for(i = 2; i < my_height; i++){
                 my_image_after[i][1] = (int)(my_image_before[i][1] * my_args.filter[1][1] +
                                         my_image_before[i - 1][1] * my_args.filter[0][1] +
@@ -873,6 +876,7 @@ int main(void){
     } // End if d)
     /* Inner processes - all neighbours are active */
     else{
+
         /* Perform convolution */
         for(iter = 0; iter < my_args.iterations; iter++){
 
