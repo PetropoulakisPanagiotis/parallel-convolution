@@ -499,7 +499,7 @@ int main(void){
             /* Right column - except from upper and lower right corners */
             for(i = 2; i < my_height; i++){
                 my_image_after[i][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
-                                                my_image_before[i + 1][my_width_1] * my_args.filter[2][2] +
+                                                my_image_before[i - 1][my_width] * my_args.filter[0][1] +
                                                 my_image_before[i + 1][my_width] * my_args.filter[2][1] +
                                                 my_image_before[i + 1][my_width - 1] * my_args.filter[2][0] +
                                                 my_image_before[i][my_width - 1] * my_args.filter[2][0] +
