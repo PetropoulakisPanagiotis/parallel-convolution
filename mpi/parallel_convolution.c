@@ -171,7 +171,7 @@ int main(void){
         neighbours[SW] = MPI_PROC_NULL;
 
     /* [W]West Neighbour (6) */
-    if(row_id != 0){ // If not on the left edge
+    if(row_id != 0) // If not on the left edge
         neighbours[W] = my_rank - 1;
     else
         neighbours[W] = MPI_PROC_NULL;
@@ -274,8 +274,6 @@ int main(void){
     for(i = 1; i < (my_height_2); i++)
         my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
 
-
-    /*
     char fileName[10];
     sprintf(fileName,"File%dA",my_rank);
 
@@ -289,7 +287,6 @@ int main(void){
     }
 
     fclose(my_file);
-    */
 
     /* Set columns type for sending columns East and West */
     MPI_Datatype column_type;
@@ -319,98 +316,243 @@ int main(void){
     MPI_Recv_init(&my_image_before[my_height_1][0], 1,MPI_INT,neighbours[SW],SW,MPI_COMM_WORLD,&recv_requests[SW]);
     MPI_Recv_init(&my_image_before[1][0], 1, column_type, neighbours[W], W, MPI_COMM_WORLD, &recv_requests[W]);
     MPI_Recv_init(&my_image_before[0][0], 1, MPI_INT, neighbours[NW], NW, MPI_COMM_WORLD, &recv_requests[NW]);
+   
+    /* Left upper process - active neighbours E, SE, S */
+    if(my_rank == 0){
+        /* Perform convolution */
+        for(iter = 0; iter < my_args.iterations; iter++){
 
-    /* Perform convolution */
-    for(iter = 0; iter < my_args.iterations; iter++){
+            /* Start sending my pixels/non-blocking */
+            MPI_Startall(NUM_NEIGHBOURS, send_requests);
 
-        /* Start sending my pixels/non-blocking */
-        MPI_Startall(NUM_NEIGHBOURS, send_requests);
+            //////////////////////////////////
+            /* Convolute inner pixels first */
+            //////////////////////////////////
 
-        //////////////////////////////////
-        /* Convolute inner pixels first */
-        //////////////////////////////////
+            for(i = 2; i < my_height; i++){ // For every inner row
+                for(j = 2; j < my_width; j++){ // and every inner column
 
-        for(i = 2; i < my_height; i++){ // For every inner row
-            for(j = 2; j < my_width; j++){ // and every inner column
+                    /* Compute the new value of the current pixel */
+                    my_image_after[i][j] = (int)(my_image_before[i][j] * my_args.filter[1][1] +
+                                            my_image_before[i - 1][j] * my_args.filter[0][1] +
+                                            my_image_before[i - 1][j + 1] * my_args.filter[0][2] +
+                                            my_image_before[i][j + 1] * my_args.filter[1][2] +
+                                            my_image_before[i + 1][j + 1] * my_args.filter[2][2] +
+                                            my_image_before[i + 1][j] * my_args.filter[2][1] +
+                                            my_image_before[i + 1][j - 1] * my_args.filter[2][0] +
+                                            my_image_before[i][j - 1] * my_args.filter[2][0] +
+                                            my_image_before[i - 1][j - 1] * my_args.filter[0][0]);
+                    
+                    /* Truncated unexpected values */
+                    if(my_image_after[i][j] < 0) 
+                        my_image_after[i][j] = 0;
+                    else if(my_image_after[i][j] > 255)
+                        my_image_after[i][j] = 255;
+                } // End for
+            } // End for 
 
-                /* Compute the new value of the current pixel */
-                my_image_after[i][j] =  (int)(my_image_before[i][j] * my_args.filter[1][1] +
-                                        my_image_before[i - 1][j] * my_args.filter[0][1] +
-                                        my_image_before[i - 1][j + 1] * my_args.filter[0][2] +
-                                        my_image_before[i][j + 1] * my_args.filter[1][2] +
-                                        my_image_before[i + 1][j + 1] * my_args.filter[2][2] +
-                                        my_image_before[i + 1][j] * my_args.filter[2][1] +
-                                        my_image_before[i + 1][j - 1] * my_args.filter[2][0] +
-                                        my_image_before[i][j - 1] * my_args.filter[2][0] +
-                                        my_image_before[i - 1][j - 1] * my_args.filter[0][0]);
+            //////////////////////////////////////////////
+            /* Convolute outer independent pixels first */
+            //////////////////////////////////////////////
+            
+            /* Left column - except from upper and lower left corner */
+            for(i = 2; i < my_height; i++){
+                my_image_after[i][1] = (int)(my_image_before[i][1] * my_args.filter[1][1] +
+                                        my_image_before[i - 1][1] * my_args.filter[0][1] +
+                                        my_image_before[i - 1][2] * my_args.filter[0][2] +
+                                        my_image_before[i][2] * my_args.filter[1][2] +
+                                        my_image_before[i + 1][2] * my_args.filter[2][2] +
+                                        my_image_before[i + 1][1] * my_args.filter[2][1]);
+                    
+                /* Truncated unexpected values */
+                if(my_image_after[i][1] < 0) 
+                    my_image_after[i][1] = 0;
+                else if(my_image_after[i][1] > 255)
+                    my_image_after[i][1] = 255;
+            } // End for
+            
+            /* Left upper corner */
+            my_image_after[1][1] = (int)(my_image_before[1][1] * my_args.filter[1][1] +
+                                    my_image_before[1][2] * my_args.filter[1][2] +
+                                    my_image_before[2][2] * my_args.filter[2][2] +
+                                    my_image_before[2][1] * my_args.filter[2][1]);
+                    
+            /* Truncated unexpected values */
+            if(my_image_after[1][1] < 0) 
+                my_image_after[1][1] = 0;
+            else if(my_image_after[1][1] > 255)
+                my_image_after[1][1] = 255;
+            
+            /* First line - execpt from left and right upper corners */
+            for(j = 2; j < my_width; j++){
+                my_image_after[1][j] = (int)(my_image_before[1][j] * my_args.filter[1][1] +
+                                        my_image_before[1][j + 1] * my_args.filter[1][2] +
+                                        my_image_before[2][j + 1] * my_args.filter[2][2] +
+                                        my_image_before[2][j] * my_args.filter[2][1] +
+                                        my_image_before[2][j - 1] * my_args.filter[2][0] +
+                                        my_image_before[1][j - 1] * my_args.filter[2][0]);
                 
                 /* Truncated unexpected values */
-                if(my_image_after[i][j] < 0) 
-                    my_image_after[i][j] = 0;
-                if(my_image_after[i][j] > 255)
-                    my_image_after[i][j] = 255;
+                if(my_image_after[1][j] < 0) 
+                    my_image_after[1][j] = 0;
+                else if(my_image_after[1][j] > 255)
+                    my_image_after[1][j] = 255;
             } // End for
-        } // End for 
+                
+            /* Start receiving neighbours pixels/non-blocking */
+            MPI_Startall(NUM_NEIGHBOURS, recv_requests);
+
+            MPI_Status recv_stat;
+
+            /* Keep receiving from all neighbours */
+            for(k = 0; k < NUM_NEIGHBOURS; k++){
+                MPI_Waitany(NUM_NEIGHBOURS, recv_requests, &index, &recv_stat);
+                //printf("rank %d\t src: %d\t tag: %d\n",my_rank,recv_stat.MPI_SOURCE,recv_stat.MPI_TAG);
+            } // End for
 
 
-        /* Start receiving neighbours pixels/non-blocking */
-        MPI_Startall(NUM_NEIGHBOURS, recv_requests);
+                char fileName[10];
+                sprintf(fileName,"File%dB",my_rank);
 
-        MPI_Status recv_stat;
+                FILE* my_file = fopen(fileName, "w");
 
-        /* Keep receiving from all neighbours */
-        for(k = 0; k < NUM_NEIGHBOURS; k++){
-            MPI_Waitany(NUM_NEIGHBOURS, recv_requests, &index, &recv_stat);
-            //printf("rank %d\t src: %d\t tag: %d\n",my_rank,recv_stat.MPI_SOURCE,recv_stat.MPI_TAG);
-        } // End for
+                for(i = 0; i < my_height + 2; i++){
+                    for(j = 0; j < my_width + 2; j++){
+                        fprintf(my_file, "%d\t", my_image_after[i][j]);
+                    }
+                    fprintf(my_file, "\n");
+                }
+
+                fclose(my_file);
 
 
-        /*
-            char fileName[10];
-            sprintf(fileName,"File%dB",my_rank);
+            /* Wait all pixles to be send before to procceeding to the next loop */
+            MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
-            FILE* my_file = fopen(fileName, "w");
+            /* In the next loop perform convolution to the new image  - swapp images */
+            tmp_ptr = my_image_before[0];
+
+            my_image_before[0] = my_image_after[0];
+            for(i = 1; i < my_height_2; i++)
+                my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+
+            my_image_after[0] = tmp_ptr;
+            for(i = 1; i < (my_height_2); i++)
+                my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+
+            /*
+            sprintf(fileName,"File%dC",my_rank);
+
+            my_file = fopen(fileName, "w");
 
             for(i = 0; i < my_height + 2; i++){
                 for(j = 0; j < my_width + 2; j++){
-                    fprintf(my_file, "%d\t", my_image_after[i][j]);
+                    fprintf(my_file, "%d\t", my_image_before[i][j]);
                 }
                 fprintf(my_file, "\n");
             }
 
             fclose(my_file);
-        */
+            */
 
-        /* Wait all pixles to be send before to procceeding to the next loop */
-        MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
+        } // End of iter
 
-        /* In the next loop perform convolution to the new image  - swapp images */
-        tmp_ptr = my_image_before[0];
 
-        my_image_before[0] = my_image_after[0];
-        for(i = 1; i < my_height_2; i++)
-            my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
 
-        my_image_after[0] = tmp_ptr;
-        for(i = 1; i < (my_height_2); i++)
-            my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+    }
+    else{
+        /* Perform convolution */
+        for(iter = 0; iter < my_args.iterations; iter++){
 
-        /*
-        sprintf(fileName,"File%dC",my_rank);
+            /* Start sending my pixels/non-blocking */
+            MPI_Startall(NUM_NEIGHBOURS, send_requests);
 
-        my_file = fopen(fileName, "w");
+            //////////////////////////////////
+            /* Convolute inner pixels first */
+            //////////////////////////////////
 
-        for(i = 0; i < my_height + 2; i++){
-            for(j = 0; j < my_width + 2; j++){
-                fprintf(my_file, "%d\t", my_image_before[i][j]);
+            for(i = 2; i < my_height; i++){ // For every inner row
+                for(j = 2; j < my_width; j++){ // and every inner column
+
+                    /* Compute the new value of the current pixel */
+                    my_image_after[i][j] =  (int)(my_image_before[i][j] * my_args.filter[1][1] +
+                                            my_image_before[i - 1][j] * my_args.filter[0][1] +
+                                            my_image_before[i - 1][j + 1] * my_args.filter[0][2] +
+                                            my_image_before[i][j + 1] * my_args.filter[1][2] +
+                                            my_image_before[i + 1][j + 1] * my_args.filter[2][2] +
+                                            my_image_before[i + 1][j] * my_args.filter[2][1] +
+                                            my_image_before[i + 1][j - 1] * my_args.filter[2][0] +
+                                            my_image_before[i][j - 1] * my_args.filter[2][0] +
+                                            my_image_before[i - 1][j - 1] * my_args.filter[0][0]);
+                    
+                    /* Truncated unexpected values */
+                    if(my_image_after[i][j] < 0) 
+                        my_image_after[i][j] = 0;
+                    if(my_image_after[i][j] > 255)
+                        my_image_after[i][j] = 255;
+                } // End for
+            } // End for 
+
+
+            /* Start receiving neighbours pixels/non-blocking */
+            MPI_Startall(NUM_NEIGHBOURS, recv_requests);
+
+            MPI_Status recv_stat;
+
+            /* Keep receiving from all neighbours */
+            for(k = 0; k < NUM_NEIGHBOURS; k++){
+                MPI_Waitany(NUM_NEIGHBOURS, recv_requests, &index, &recv_stat);
+                //printf("rank %d\t src: %d\t tag: %d\n",my_rank,recv_stat.MPI_SOURCE,recv_stat.MPI_TAG);
+            } // End for
+
+
+            /*
+                char fileName[10];
+                sprintf(fileName,"File%dB",my_rank);
+
+                FILE* my_file = fopen(fileName, "w");
+
+                for(i = 0; i < my_height + 2; i++){
+                    for(j = 0; j < my_width + 2; j++){
+                        fprintf(my_file, "%d\t", my_image_after[i][j]);
+                    }
+                    fprintf(my_file, "\n");
+                }
+
+                fclose(my_file);
+            */
+
+            /* Wait all pixles to be send before to procceeding to the next loop */
+            MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
+
+            /* In the next loop perform convolution to the new image  - swapp images */
+            tmp_ptr = my_image_before[0];
+
+            my_image_before[0] = my_image_after[0];
+            for(i = 1; i < my_height_2; i++)
+                my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+
+            my_image_after[0] = tmp_ptr;
+            for(i = 1; i < (my_height_2); i++)
+                my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+
+            /*
+            sprintf(fileName,"File%dC",my_rank);
+
+            my_file = fopen(fileName, "w");
+
+            for(i = 0; i < my_height + 2; i++){
+                for(j = 0; j < my_width + 2; j++){
+                    fprintf(my_file, "%d\t", my_image_before[i][j]);
+                }
+                fprintf(my_file, "\n");
             }
-            fprintf(my_file, "\n");
-        }
 
-        fclose(my_file);
-        */
+            fclose(my_file);
+            */
 
-    } // End of iter
+        } // End of iter
+    }
 
     /* Free memory */
     free(my_image_before[0]);
