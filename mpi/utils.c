@@ -92,11 +92,11 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
         else
             total_sum += line_sum; // Line was valid, add it in total sum
 	} // End for
-   /* 
-     Normalize or not the filter
+    
+    /* Normalize or not the filter */
     printf("If you want to normalize filter press y otherwise n:");
 
-     Read input 
+    /*  Read input */
     while(1){
 	    
         error = getline(&line, &buff_size, stdin);
@@ -114,9 +114,9 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
     } // End while
     
 
-     Normalize filter 
+    /* Normalize filter */
     if(!strcmp(normalize, "y") || !strcmp(normalize, "yes")){
-*/
+
         printf("NORMALIZED FILTER: \n");
         for(i = 0; i < FILTER_SIZE; i++){
             for(j = 0; j < FILTER_SIZE; j++){
@@ -125,7 +125,7 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
             } // End for
             puts("");
         } // End for
-//    }
+    }
 
     free(line);
 
