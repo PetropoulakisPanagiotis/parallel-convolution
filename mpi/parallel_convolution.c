@@ -1280,7 +1280,7 @@ int main(void){
                     } // End if corner
                 } // End if W
                 /* Check if it is possible to convolute left lower corner */
-                if(recv_stat.MPI_TAG == SW){
+                else if(recv_stat.MPI_TAG == SW){
                     flag_corner_ll += 1;
 
                     /* Convolute left lower corner */
@@ -1382,7 +1382,7 @@ int main(void){
                     } // End if corner 
                 } // End if SE
                 /* Convolute right column and right upper corner */
-                if(recv_stat.MPI_TAG == E){
+                else if(recv_stat.MPI_TAG == E){
                     flag_corner_lr += 1;
                     /* Right column */
                     for(i = 2; i < my_height; i++){
@@ -1468,6 +1468,8 @@ int main(void){
     } // End if e)
     /* Right column processes - except from first and last process in this column - active neighbours N, S, SW, W, NW */
     else if(my_rank % procs_per_line == procs_per_line_1){
+        int flag_corner_ul = 0, flag_corner_ll = 0; // Flag == 3, convolute corners  
+
         /* Perform convolution */
         for(iter = 0; iter < my_args.iterations; iter++){
             /* Start sending my pixels/non-blocking */
@@ -1527,8 +1529,241 @@ int main(void){
             /* Keep receiving from all neighbours */
             for(k = 0; k < NUM_NEIGHBOURS; k++){
                 MPI_Waitany(NUM_NEIGHBOURS, recv_requests, &index, &recv_stat);
-                //printf("rank %d\t src: %d\t tag: %d\n",my_rank,recv_stat.MPI_SOURCE,recv_stat.MPI_TAG);
-            } // End for
+
+                /* Convolute first line and right upper corner */
+                if(recv_stat.MPI_TAG == N){
+                    flag_corner_ll += 1;
+                    /* First line */
+                    for(j = 2; j < my_width; j++){
+                        my_image_after[1][j] = (int)(my_image_before[1][j] * my_args.filter[1][1] +
+                                                my_image_before[0][j] * my_args.filter[0][1] +
+                                                my_image_before[0][j + 1] * my_args.filter[0][2] +
+                                                my_image_before[1][j + 1] * my_args.filter[1][2] +
+                                                my_image_before[2][j + 1] * my_args.filter[2][2] +
+                                                my_image_before[2][j] * my_args.filter[2][1] +
+                                                my_image_before[2][j - 1] * my_args.filter[2][0] +
+                                                my_image_before[1][j - 1] * my_args.filter[1][0] +
+                                                my_image_before[0][j - 1] * my_args.filter[0][0]);
+
+                        /* Truncated unexpected values */
+                        if(my_image_after[1][j] < 0)
+                            my_image_after[1][j] = 0;
+                        else if(my_image_after[1][j] > 255)
+                            my_image_after[1][j] = 255;
+                    } // End for
+
+                    /* Right upper corner */
+                    my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
+                                                    my_image_before[0][my_width] * my_args.filter[0][1] +
+                                                    my_image_before[2][my_width] * my_args.filter[2][1] +
+                                                    my_image_before[2][my_width - 1] * my_args.filter[2][0] +
+                                                    my_image_before[1][my_width - 1] * my_args.filter[1][0] +
+                                                    my_image_before[0][my_width - 1] * my_args.filter[0][0]);
+                    /* Truncated unexpected values */
+                    if(my_image_after[1][my_width] < 0)
+                        my_image_after[1][my_width] = 0;
+                    else if(my_image_after[1][my_width] > 255)
+                        my_image_after[1][my_width] = 255;
+                
+                    /* Convolute left upper corner */
+                    if(flag_corner_ul == 3){
+                        my_image_after[1][1] = (int)(my_image_before[1][1] * my_args.filter[1][1] +
+                                                my_image_before[0][1] * my_args.filter[0][1] +
+                                                my_image_before[0][2] * my_args.filter[0][2] +
+                                                my_image_before[1][2] * my_args.filter[1][2] +
+                                                my_image_before[2][2] * my_args.filter[2][2] +
+                                                my_image_before[2][1] * my_args.filter[2][1] +
+                                                my_image_before[2][0] * my_args.filter[2][0] +
+                                                my_image_before[1][0] * my_args.filter[1][0] +
+                                                my_image_before[0][0] * my_args.filter[0][0]);
+            
+                        /* Truncated unexpected values */
+                        if(my_image_after[1][1] < 0)
+                            my_image_after[1][1] = 0;
+                        else if(my_image_after[1][1] > 255)
+                        my_image_after[1][1] = 255;
+                    } // End if corner 
+                } // End if N
+                /* Convolute last line and right lower corner */
+                else if(recv_stat.MPI_TAG == S){
+                    flag_corner_ll += 1;
+
+                    /* Last line */
+                    for(j = 2; j < my_width; j++){
+                        my_image_after[my_height][j] = (int)(my_image_before[my_height][j] * my_args.filter[1][1] +
+                                                        my_image_before[my_height - 1][j] * my_args.filter[0][1] +
+                                                        my_image_before[my_height - 1][j + 1] * my_args.filter[0][2] +
+                                                        my_image_before[my_height][j + 1] * my_args.filter[1][2] +
+                                                        my_image_before[my_height + 1][j + 1] * my_args.filter[2][2] +
+                                                        my_image_before[my_height + 1][j] * my_args.filter[2][1] +
+                                                        my_image_before[my_height + 1][j - 1] * my_args.filter[2][0] +
+                                                        my_image_before[my_height][j - 1] * my_args.filter[1][0] +
+                                                        my_image_before[my_height - 1][j - 1] * my_args.filter[0][0]);
+
+                        /* Truncated unexpected values */
+                        if(my_image_after[my_height][j] < 0)
+                            my_image_after[my_height][j] = 0;
+                        else if(my_image_after[my_height][j] > 255)
+                            my_image_after[my_height][j] = 255;
+                    } // End for
+
+                    /* Right lower corner */
+                    my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
+                                                            my_image_before[my_height - 1][my_width] * my_args.filter[0][1] +
+                                                            my_image_before[my_height + 1][my_width] * my_args.filter[2][1] +
+                                                            my_image_before[my_height + 1][my_width - 1] * my_args.filter[2][0] +
+                                                            my_image_before[my_height][my_width - 1] * my_args.filter[1][0] +
+                                                            my_image_before[my_height - 1][my_width - 1] * my_args.filter[0][0]);
+                    /* Truncated unexpected values */
+                    if(my_image_after[my_height][my_width] < 0)
+                        my_image_after[my_height][my_width] = 0;
+                    else if(my_image_after[my_height][my_width] > 255)
+                        my_image_after[my_height][my_width] = 255;
+
+                    /* Convolute left lower corner */
+                    if(flag_corner_ll == 3){
+                        my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
+                                                        my_image_before[my_height - 1][1] * my_args.filter[0][1] +
+                                                        my_image_before[my_height - 1][2] * my_args.filter[0][2] +
+                                                        my_image_before[my_height][2] * my_args.filter[1][2] +
+                                                        my_image_before[my_height + 1][2] * my_args.filter[2][2] +
+                                                        my_image_before[my_height + 1][1] * my_args.filter[2][1] +
+                                                        my_image_before[my_height + 1][0] * my_args.filter[2][0] +
+                                                        my_image_before[my_height][0] * my_args.filter[1][0] +
+                                                        my_image_before[my_height - 1][0] * my_args.filter[0][0]);
+            
+                        /* Truncated unexpected values */
+                        if(my_image_after[my_height][1] < 0)
+                            my_image_after[my_height][1] = 0;
+                        else if(my_image_after[my_height][1] > 255)
+                            my_image_after[my_height][1] = 255;
+                    } // End if corner   
+                } // End if S
+                /* Check if it is possible to convolute left lower corner */
+                else if(recv_stat.MPI_TAG == SW){
+                    flag_corner_ll += 1;
+
+                    /* Convolute left lower corner */
+                    if(flag_corner_ll == 3){
+                        my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
+                                                        my_image_before[my_height - 1][1] * my_args.filter[0][1] +
+                                                        my_image_before[my_height - 1][2] * my_args.filter[0][2] +
+                                                        my_image_before[my_height][2] * my_args.filter[1][2] +
+                                                        my_image_before[my_height + 1][2] * my_args.filter[2][2] +
+                                                        my_image_before[my_height + 1][1] * my_args.filter[2][1] +
+                                                        my_image_before[my_height + 1][0] * my_args.filter[2][0] +
+                                                        my_image_before[my_height][0] * my_args.filter[1][0] +
+                                                        my_image_before[my_height - 1][0] * my_args.filter[0][0]);
+            
+                        /* Truncated unexpected values */
+                        if(my_image_after[my_height][1] < 0)
+                            my_image_after[my_height][1] = 0;
+                        else if(my_image_after[my_height][1] > 255)
+                            my_image_after[my_height][1] = 255;
+                    } // End if corner
+                } // End if SW
+                /* Convolute left column and left upper corner */
+                if(recv_stat.MPI_TAG == W){
+                    flag_corner_ll += 1;
+                    flag_corner_ul += 1;
+
+                    /* Left column */
+                    for(i = 2; i < my_height; i++){
+                        my_image_after[i][1] = (int)(my_image_before[i][1] * my_args.filter[1][1] +
+                                                my_image_before[i - 1][1] * my_args.filter[0][1] +
+                                                my_image_before[i - 1][2] * my_args.filter[0][2] +
+                                                my_image_before[i][2] * my_args.filter[1][2] +
+                                                my_image_before[i + 1][2] * my_args.filter[2][2] +
+                                                my_image_before[i + 1][1] * my_args.filter[2][1] +
+                                                my_image_before[i + 1][0] * my_args.filter[2][0] +
+                                                my_image_before[i][0] * my_args.filter[1][0] +
+                                                my_image_before[i - 1][0] * my_args.filter[0][0]);
+
+                        /* Truncated unexpected values */
+                        if(my_image_after[i][1] < 0)
+                            my_image_after[i][1] = 0;
+                        else if(my_image_after[i][1] > 255)
+                            my_image_after[i][1] = 255;
+                    } // End for
+
+                    /* Left upper corner */
+                    my_image_after[1][1] = (int)(my_image_before[1][1] * my_args.filter[1][1] +
+                                            my_image_before[1][2] * my_args.filter[1][2] +
+                                            my_image_before[2][2] * my_args.filter[2][2] +
+                                            my_image_before[2][1] * my_args.filter[2][1] +
+                                            my_image_before[2][0] * my_args.filter[2][0] +
+                                            my_image_before[1][0] * my_args.filter[1][0]);
+
+                    /* Truncated unexpected values */
+                    if(my_image_after[1][1] < 0)
+                        my_image_after[1][1] = 0;
+                    else if(my_image_after[1][1] > 255)
+                        my_image_after[1][1] = 255;
+
+
+                    /* Convolute left lower corner */
+                    if(flag_corner_ll == 3){
+                        my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
+                                                        my_image_before[my_height - 1][1] * my_args.filter[0][1] +
+                                                        my_image_before[my_height - 1][2] * my_args.filter[0][2] +
+                                                        my_image_before[my_height][2] * my_args.filter[1][2] +
+                                                        my_image_before[my_height + 1][2] * my_args.filter[2][2] +
+                                                        my_image_before[my_height + 1][1] * my_args.filter[2][1] +
+                                                        my_image_before[my_height + 1][0] * my_args.filter[2][0] +
+                                                        my_image_before[my_height][0] * my_args.filter[1][0] +
+                                                        my_image_before[my_height - 1][0] * my_args.filter[0][0]);
+            
+                        /* Truncated unexpected values */
+                        if(my_image_after[my_height][1] < 0)
+                            my_image_after[my_height][1] = 0;
+                        else if(my_image_after[my_height][1] > 255)
+                            my_image_after[my_height][1] = 255;
+                    } // End if corner
+
+                    /* Convolute left upper corner */
+                    if(flag_corner_ul == 3){
+                        my_image_after[1][1] = (int)(my_image_before[1][1] * my_args.filter[1][1] +
+                                                my_image_before[0][1] * my_args.filter[0][1] +
+                                                my_image_before[0][2] * my_args.filter[0][2] +
+                                                my_image_before[1][2] * my_args.filter[1][2] +
+                                                my_image_before[2][2] * my_args.filter[2][2] +
+                                                my_image_before[2][1] * my_args.filter[2][1] +
+                                                my_image_before[2][0] * my_args.filter[2][0] +
+                                                my_image_before[1][0] * my_args.filter[1][0] +
+                                                my_image_before[0][0] * my_args.filter[0][0]);
+                    
+                        /* Truncated unexpected values */
+                        if(my_image_after[1][1] < 0)
+                            my_image_after[1][1] = 0;
+                        else if(my_image_after[1][1] > 255)
+                            my_image_after[1][1] = 255;
+                    } // End if corner
+                } // End if W 
+                /* Check if it is possible to convolute left upper corner */
+                else if(recv_stat.MPI_TAG == NW){
+                    flag_corner_ul += 1;
+                    
+                    /* Convolute left upper corner */
+                    if(flag_corner_ul == 3){
+                        my_image_after[1][1] = (int)(my_image_before[1][1] * my_args.filter[1][1] +
+                                                my_image_before[0][1] * my_args.filter[0][1] +
+                                                my_image_before[0][2] * my_args.filter[0][2] +
+                                                my_image_before[1][2] * my_args.filter[1][2] +
+                                                my_image_before[2][2] * my_args.filter[2][2] +
+                                                my_image_before[2][1] * my_args.filter[2][1] +
+                                                my_image_before[2][0] * my_args.filter[2][0] +
+                                                my_image_before[1][0] * my_args.filter[1][0] +
+                                                my_image_before[0][0] * my_args.filter[0][0]);
+                    
+                        /* Truncated unexpected values */
+                        if(my_image_after[1][1] < 0)
+                            my_image_after[1][1] = 0;
+                        else if(my_image_after[1][1] > 255)
+                            my_image_after[1][1] = 255;
+                    } // End if corner 
+                } // End if NW
+
+            } // End for - Wait any
             
             char fileName[10] = "";
             sprintf(fileName,"File%dB",my_rank);
