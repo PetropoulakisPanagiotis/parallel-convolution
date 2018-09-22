@@ -313,13 +313,13 @@ int main(void){
 
     /* Receive from all neighbours */
     MPI_Recv_init(&my_image_before[0][1], my_width, MPI_INT, neighbours[N], N, MPI_COMM_WORLD, &recv_requests[N]);
-    MPI_Recv_init(&my_image_before[0][my_width], 1, MPI_INT, neighbours[NE], NE, MPI_COMM_WORLD, &recv_requests[NE]);
-    MPI_Recv_init(&my_image_before[1][my_width], 1, column_type, neighbours[E], E, MPI_COMM_WORLD, &recv_requests[E]);
-    MPI_Recv_init(&my_image_before[my_height][my_width_1], 1, MPI_INT, neighbours[SE], SE, MPI_COMM_WORLD, &recv_requests[SE]);
-    MPI_Recv_init(&my_image_before[my_height][1], my_width, MPI_INT, neighbours[S], S, MPI_COMM_WORLD, &recv_requests[S]);
-    MPI_Recv_init(&my_image_before[my_height][0], 1, MPI_INT, neighbours[SW],SW,MPI_COMM_WORLD,&recv_requests[SW]);
-    MPI_Recv_init(&my_image_before[1][1], 1, column_type, neighbours[W], W, MPI_COMM_WORLD, &recv_requests[W]);
-    MPI_Recv_init(&my_image_before[1][1], 1, MPI_INT, neighbours[NW], NW, MPI_COMM_WORLD, &recv_requests[NW]);
+    MPI_Recv_init(&my_image_before[0][my_width + 1], 1, MPI_INT, neighbours[NE], NE, MPI_COMM_WORLD, &recv_requests[NE]);
+    MPI_Recv_init(&my_image_before[1][my_width + 1], 1, column_type, neighbours[E], E, MPI_COMM_WORLD, &recv_requests[E]);
+    MPI_Recv_init(&my_image_before[my_height + 1][my_width + 1], 1, MPI_INT, neighbours[SE], SE, MPI_COMM_WORLD, &recv_requests[SE]);
+    MPI_Recv_init(&my_image_before[my_height + 1][1], my_width, MPI_INT, neighbours[S], S, MPI_COMM_WORLD, &recv_requests[S]);
+    MPI_Recv_init(&my_image_before[my_height + 1][0], 1, MPI_INT, neighbours[SW],SW,MPI_COMM_WORLD,&recv_requests[SW]);
+    MPI_Recv_init(&my_image_before[1][0], 1, column_type, neighbours[W], W, MPI_COMM_WORLD, &recv_requests[W]);
+    MPI_Recv_init(&my_image_before[0][0], 1, MPI_INT, neighbours[NW], NW, MPI_COMM_WORLD, &recv_requests[NW]);
 
     /* Left upper process - active neighbours E, SE, S */
     if(my_rank == 0){
@@ -413,8 +413,96 @@ int main(void){
             for(k = 0; k < NUM_NEIGHBOURS; k++){
                 MPI_Waitany(NUM_NEIGHBOURS, recv_requests, &index, &recv_stat);
                 //printf("rank %d\t src: %d\t tag: %d\n",my_rank,recv_stat.MPI_SOURCE,recv_stat.MPI_TAG);
-            } // End for
+                
+                /* Convolute left column and right upper corner */
+                if(recv_stat.MPI_TAG == E){
+                    /* Left column */
+                    for(i = 2; i < my_height; i++){
+                        my_image_after[i][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
+                                                        my_image_before[i - 1][my_width] * my_args.filter[0][1] +
+                                                        my_image_before[i - 1][my_width + 1] * my_args.filter[0][2] +
+                                                        my_image_before[i][my_width + 1] * my_args.filter[1][2] +
+                                                        my_image_before[i + 1][my_width + 1] * my_args.filter[2][2] +
+                                                        my_image_before[i + 1][my_width] * my_args.filter[2][1] +
+                                                        my_image_before[i + 1][my_width - 1] * my_args.filter[2][0] +
+                                                        my_image_before[i][my_width - 1] * my_args.filter[1][0] +
+                                                        my_image_before[i - 1][my_width - 1] * my_args.filter[0][0]);
 
+                        /* Truncated unexpected values */
+                        if(my_image_after[i][my_width] < 0)
+                            my_image_after[i][my_width] = 0;
+                        else if(my_image_after[i][my_width] > 255)
+                            my_image_after[i][my_width] = 255;
+                    } // End for
+
+                    printf("%d\n", my_image_before[1][my_width + 1]);
+                    /* Right upper corner */
+                    my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
+                                                        my_image_before[1][my_width + 1] * my_args.filter[1][2] +
+                                                        my_image_before[2][my_width + 1] * my_args.filter[2][2] +
+                                                        my_image_before[2][my_width] * my_args.filter[2][1] +
+                                                        my_image_before[2][my_width - 1] * my_args.filter[2][0] +
+                                                        my_image_before[1][my_width - 1] * my_args.filter[1][0]);
+
+                        /* Truncated unexpected values */
+                        if(my_image_after[1][my_width] < 0)
+                            my_image_after[1][my_width] = 0;
+                        else if(my_image_after[1][my_width] > 255)
+                            my_image_after[1][my_width] = 255;
+                } // End if E 
+                /* Convolute last line and left lower corner */
+                else if(recv_stat.MPI_TAG == S){
+                    /* Last line */
+                    for(j = 2; j < my_width; j++){
+                        my_image_after[my_height][j] = (int)(my_image_before[my_height][j] * my_args.filter[1][1] +
+                                                        my_image_before[my_height - 1][j] * my_args.filter[0][1] +
+                                                        my_image_before[my_height - 1][j + 1] * my_args.filter[0][2] +
+                                                        my_image_before[my_height][j + 1] * my_args.filter[1][2] +
+                                                        my_image_before[my_height + 1][j + 1] * my_args.filter[2][2] +
+                                                        my_image_before[my_height + 1][j] * my_args.filter[2][1] +
+                                                        my_image_before[my_height + 1][j - 1] * my_args.filter[2][0] +
+                                                        my_image_before[my_height][j - 1] * my_args.filter[1][0] +
+                                                        my_image_before[my_height - 1][j - 1] * my_args.filter[0][0]);
+
+                        /* Truncated unexpected values */
+                        if(my_image_after[my_height][j] < 0)
+                            my_image_after[my_height][j] = 0;
+                        else if(my_image_after[my_height][j] > 255)
+                            my_image_after[my_height][j] = 255;
+                    } // End for
+
+                    /* Left lower corner */
+                    my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
+                                                        my_image_before[my_height - 1][1] * my_args.filter[0][1] +
+                                                        my_image_before[my_height - 1][2] * my_args.filter[0][2] +
+                                                        my_image_before[my_height][2] * my_args.filter[1][2] +
+                                                        my_image_before[my_height + 1][2] * my_args.filter[2][2] +
+                                                        my_image_before[my_height + 1][1] * my_args.filter[2][1]);
+
+                    /* Truncated unexpected values */
+                    if(my_image_after[my_height][1] < 0)
+                        my_image_after[my_height][1] = 0;
+                    else if(my_image_after[my_height][1] > 255)
+                        my_image_after[my_height][1] = 255;
+                } // End if S
+            } // End for - wait any
+            
+            /* Convolute right lower corner */
+            my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
+                                                    my_image_before[my_height - 1][my_width] * my_args.filter[0][1] +
+                                                    my_image_before[my_height - 1][my_width + 1] * my_args.filter[0][2] +
+                                                    my_image_before[my_height][my_width + 1] * my_args.filter[1][2] +
+                                                    my_image_before[my_height + 1][my_width + 1] * my_args.filter[2][2] +
+                                                    my_image_before[my_height + 1][my_width] * my_args.filter[2][1] +
+                                                    my_image_before[my_height + 1][my_width - 1] * my_args.filter[2][0] +
+                                                    my_image_before[my_height][my_width - 1] * my_args.filter[1][0] +
+                                                    my_image_before[my_height - 1][my_width - 1] * my_args.filter[0][0]);
+            /* Truncated unexpected values */
+            if(my_image_after[my_height][my_width] < 0)
+                my_image_after[my_height][my_width] = 0;
+            else if(my_image_after[my_height][my_width] > 255)
+                my_image_after[my_height][my_width] = 255;
+            
             char fileName[10]="";
             sprintf(fileName,"File%dB",my_rank);
 
