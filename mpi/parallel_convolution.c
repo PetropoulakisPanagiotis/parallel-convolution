@@ -657,11 +657,11 @@ int main(void){
                                             my_image_before[2][0] * my_args.filter[2][0] +
                                             my_image_before[1][0] * my_args.filter[1][0]);
 
-                        /* Truncated unexpected values */
-                        if(my_image_after[1][1] < 0)
-                            my_image_after[1][1] = 0;
-                        else if(my_image_after[1][1] > 255)
-                            my_image_after[1][1] = 255;
+                    /* Truncated unexpected values */
+                    if(my_image_after[1][1] < 0)
+                        my_image_after[1][1] = 0;
+                    else if(my_image_after[1][1] > 255)
+                        my_image_after[1][1] = 255;
                 } // End if W 
                 /* Convolute last line and right lower corner */
                 else if(recv_stat.MPI_TAG == S){
@@ -2170,7 +2170,7 @@ int main(void){
             for(k = 0; k < NUM_NEIGHBOURS; k++){
                 MPI_Waitany(NUM_NEIGHBOURS, recv_requests, &index, &recv_stat);
             
-                /* Convolute first line and left upper corner */
+                /* Convolute first line, left upper corner and right upper corner */
                 if(recv_stat.MPI_TAG == N){
                     flag_corner_ur += 1;
 
@@ -2249,7 +2249,7 @@ int main(void){
                             my_image_after[1][my_width] = 255;
                     } // End if corner
                 } // End if NE
-                /* Convolute right column */
+                /* Convolute right column, right upper corner and right lower corner */
                 else if(recv_stat.MPI_TAG == E){
                     flag_corner_ur += 1;
                     flag_corner_lr += 1;
@@ -2332,7 +2332,7 @@ int main(void){
                             my_image_after[my_height][my_width] = 255;
                     } // End if corner 
                 } // End if SE
-                /* Convolute last line and left lower corner */
+                /* Convolute last line, left lower corner and right lower corner */
                 else if(recv_stat.MPI_TAG == S){
                     flag_corner_lr += 1;
 
@@ -2463,7 +2463,7 @@ int main(void){
             for(k = 0; k < NUM_NEIGHBOURS; k++){
                 MPI_Waitany(NUM_NEIGHBOURS, recv_requests, &index, &recv_stat);
             
-                /* Convolute first line */
+                /* Convolute first line, left upper corner and right upper corner */
                 if(recv_stat.MPI_TAG == N){
                     flag_corner_ul += 1;
                     flag_corner_ur += 1;
@@ -2548,7 +2548,7 @@ int main(void){
                             my_image_after[1][my_width] = 255;
                     } // End if corner
                 } // End if NE
-                /* Convolute right column */
+                /* Convolute right column, right upper corner and right lower corner */
                 else if(recv_stat.MPI_TAG == E){
                     flag_corner_ur += 1;
                     flag_corner_lr += 1;
@@ -2630,7 +2630,7 @@ int main(void){
                             my_image_after[my_height][my_width] = 255;
                     } // End if corner 
                 } // End if SE
-                /* Convolute last line */
+                /* Convolute last line, left lower corner and right lower corner */
                 else if(recv_stat.MPI_TAG == S){
                     flag_corner_ll += 1;
                     flag_corner_lr += 1;
@@ -2713,11 +2713,11 @@ int main(void){
                             my_image_after[my_height][1] = 255;
                     } // End if corner
                 } // End if SW
-                /* Convolute left column */
+                /* Convolute left column, left upper corner and left lower corner */
                 if(recv_stat.MPI_TAG == W){
-                    flag_corner_ll += 1;
                     flag_corner_ul += 1;
-
+                    flag_corner_ll += 1;
+                    
                     /* Left column */
                     for(i = 2; i < my_height; i++){
                         my_image_after[i][1] = (int)(my_image_before[i][1] * my_args.filter[1][1] +
