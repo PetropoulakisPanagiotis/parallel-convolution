@@ -189,3 +189,9 @@ P  21/09 - 13:11
 -> no leaks 
 -> -> to do -> δημηουργία μεταβλητών και καλύτερα ονόματα my_width_inc_1, my_width_dec_1 κλπ
 ----> Αν είναι δες outer απλά τρέξε το και σύκγρινε Α - Β (9 proc)
+
+P  22/09 
+----------
+outers done 
+check again e, h, g, h , i
+change frequent vars + messages 
