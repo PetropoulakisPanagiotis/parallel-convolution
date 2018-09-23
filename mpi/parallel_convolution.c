@@ -330,8 +330,63 @@ int main(void){
     /* ll -> lower left  */
     /* lr -> lower right */
 
+    /* Only one process */
+    if(comm_size == 1){
+        /* Perform convolution */
+        for(iter = 0; iter < my_args.iterations; iter++){
+ 
+            //////////////////////////////////
+            /* Convolute all pixels at once */
+            //////////////////////////////////
+            for(i = 1; i < my_height_incr_1; i++){ // For every inner row
+                for(j = 1; j < my_width_incr_1; j++){ // and every inner column
+
+                    /* Compute the new value of the current pixel */
+                    my_image_after[i][j] = (int)(my_image_before[i][j] * my_args.filter[1][1] +
+                                            my_image_before[i - 1][j] * my_args.filter[0][1] +
+                                            my_image_before[i - 1][j + 1] * my_args.filter[0][2] +
+                                            my_image_before[i][j + 1] * my_args.filter[1][2] +
+                                            my_image_before[i + 1][j + 1] * my_args.filter[2][2] +
+                                            my_image_before[i + 1][j] * my_args.filter[2][1] +
+                                            my_image_before[i + 1][j - 1] * my_args.filter[2][0] +
+                                            my_image_before[i][j - 1] * my_args.filter[1][0] +
+                                            my_image_before[i - 1][j - 1] * my_args.filter[0][0]);
+
+                    /* Truncated unexpected values */
+                    if(my_image_after[i][j] < 0)
+                        my_image_after[i][j] = 0;
+                    else if(my_image_after[i][j] > 255)
+                        my_image_after[i][j] = 255;
+                } // End for
+            } // End for
+
+            /* In the next loop perform convolution to the new image  - swapp images */
+            tmp_ptr = my_image_before[0];
+
+            my_image_before[0] = my_image_after[0];
+            for(i = 1; i < my_height_incr_2; i++)
+                my_image_before[i] = &(my_image_before[0][i*(my_width_incr_2)]);
+
+            my_image_after[0] = tmp_ptr;
+            for(i = 1; i < my_height_incr_2; i++)
+                my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
+        } // End for iter
+
+        char fileName[10]="";
+        sprintf(fileName,"File%dB",my_rank);
+
+        FILE* my_file = fopen(fileName, "w");
+        for(i = 0; i < my_height_incr_2; i++){
+            for(j = 0; j < my_width_incr_2; j++){
+                fprintf(my_file, "%d\t", my_image_after[i][j]);   
+            }
+            fprintf(my_file, "\n");   
+        }
+        
+        fclose(my_file);
+    } // End if comm_size == 1
     /* Left upper process - active neighbours E, SE, S */
-    if(my_rank == 0){
+    else if(my_rank == 0){
 
         /* Perform convolution */
         for(iter = 0; iter < my_args.iterations; iter++){
@@ -510,20 +565,6 @@ int main(void){
             else if(my_image_after[my_height][my_width] > 255)
                 my_image_after[my_height][my_width] = 255;
             
-            char fileName[10]="";
-            sprintf(fileName,"File%dB",my_rank);
-
-            FILE* my_file = fopen(fileName, "w");
-
-            for(i = 0; i < my_height_incr_2; i++){
-                for(j = 0; j < my_width_incr_2; j++){
-                    fprintf(my_file, "%d\t", my_image_after[i][j]);
-                }
-                fprintf(my_file, "\n");
-            }
-
-            fclose(my_file);
-
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
@@ -538,6 +579,19 @@ int main(void){
             for(i = 1; i < my_height_incr_2; i++)
                 my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
+
+        char fileName[10]="";
+        sprintf(fileName,"File%dB",my_rank);        
+        FILE* my_file = fopen(fileName, "w");
+
+        for(i = 0; i < my_height_incr_2; i++){
+            for(j = 0; j < my_width_incr_2; j++){
+                fprintf(my_file, "%d\t", my_image_after[i][j]);   
+            }
+            fprintf(my_file, "\n");   
+        }
+        fclose(my_file);
+    
     } // End if a)
     /* Right upper process - active neighbours S, SW, W */
     else if(my_rank == procs_per_line_1){
@@ -719,20 +773,6 @@ int main(void){
             else if(my_image_after[my_height][1] > 255)
                 my_image_after[my_height][1] = 255;
 
-            char fileName[10]="";
-            sprintf(fileName,"File%dB",my_rank);
-
-            FILE* my_file = fopen(fileName, "w");
-
-            for(i = 0; i < my_height_incr_2; i++){
-                for(j = 0; j < my_width_incr_2; j++){
-                    fprintf(my_file, "%d\t", my_image_after[i][j]);
-                }
-                fprintf(my_file, "\n");
-            }
-            
-            fclose(my_file);
-
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
@@ -747,6 +787,20 @@ int main(void){
             for(i = 1; i < my_height_incr_2; i++)
                 my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
+        
+        char fileName[10]="";
+        sprintf(fileName,"File%dB",my_rank);
+
+        FILE* my_file = fopen(fileName, "w");
+        for(i = 0; i < my_height_incr_2; i++){
+            for(j = 0; j < my_width_incr_2; j++){
+                fprintf(my_file, "%d\t", my_image_after[i][j]);   
+            }
+            fprintf(my_file, "\n");   
+        }
+        
+        fclose(my_file);
+
     } // End if b)
     /* Right lower process - active neighbours W, NW, N */
     else if(my_rank == comm_size - 1){
@@ -928,20 +982,6 @@ int main(void){
             else if(my_image_after[1][1] > 255)
                 my_image_after[1][1] = 255;
 
-            char fileName[10]="";
-            sprintf(fileName,"File%dB",my_rank);
-
-            FILE* my_file = fopen(fileName, "w");
-
-            for(i = 0; i < my_height_incr_2; i++){
-                for(j = 0; j < my_width_incr_2; j++){
-                    fprintf(my_file, "%d\t", my_image_after[i][j]);
-                }
-                fprintf(my_file, "\n");
-            }
-
-            fclose(my_file);
-
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
@@ -956,6 +996,19 @@ int main(void){
             for(i = 1; i < (my_height_incr_2); i++)
                 my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
+        
+        char fileName[10]="";
+        sprintf(fileName,"File%dB",my_rank);
+
+        FILE* my_file = fopen(fileName, "w");
+        for(i = 0; i < my_height_incr_2; i++){
+            for(j = 0; j < my_width_incr_2; j++){
+                fprintf(my_file, "%d\t", my_image_after[i][j]);   
+            }
+            fprintf(my_file, "\n");   
+        }
+        
+        fclose(my_file);
     } // End if c)
     /* Left lower process - active neighbours N, NE, E */
     else if(my_rank == comm_size - procs_per_line){
@@ -1138,20 +1191,6 @@ int main(void){
             else if(my_image_after[1][my_width] > 255)
                 my_image_after[1][my_width] = 255;
 
-            char fileName[10]="";
-            sprintf(fileName,"File%dB",my_rank);
-
-            FILE* my_file = fopen(fileName, "w");
-
-            for(i = 0; i < my_height_incr_2; i++){
-                for(j = 0; j < my_width_incr_2; j++){
-                    fprintf(my_file, "%d\t", my_image_after[i][j]);
-                }
-                fprintf(my_file, "\n");
-            }
-
-            fclose(my_file);
-
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
@@ -1166,6 +1205,19 @@ int main(void){
             for(i = 1; i < (my_height_incr_2); i++)
                 my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
+        
+        char fileName[10]="";
+        sprintf(fileName,"File%dB",my_rank);
+
+        FILE* my_file = fopen(fileName, "w");
+        for(i = 0; i < my_height_incr_2; i++){
+            for(j = 0; j < my_width_incr_2; j++){
+                fprintf(my_file, "%d\t", my_image_after[i][j]);   
+            }
+            fprintf(my_file, "\n");   
+        }
+        
+        fclose(my_file);
     } // End if d)
     /* First line processes - except from first and last process in this line - active neighbours E, SE , S, SW, W */
     else if(my_rank < procs_per_line_1){
@@ -1449,20 +1501,6 @@ int main(void){
                     } // End if corner
                 } // End if W
             } // End for - Wait any
-                        
-            char fileName[10]="";
-            sprintf(fileName,"File%dB",my_rank);
-
-            FILE* my_file = fopen(fileName, "w");
-
-            for(i = 0; i < my_height_incr_2; i++){
-                for(j = 0; j < my_width_incr_2; j++){
-                    fprintf(my_file, "%d\t", my_image_after[i][j]);
-                }
-                fprintf(my_file, "\n");
-            }
-
-            fclose(my_file);
 
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
@@ -1478,6 +1516,19 @@ int main(void){
             for(i = 1; i < (my_height_incr_2); i++)
                 my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
+        
+        char fileName[10]="";
+        sprintf(fileName,"File%dB",my_rank);
+
+        FILE* my_file = fopen(fileName, "w");
+        for(i = 0; i < my_height_incr_2; i++){
+            for(j = 0; j < my_width_incr_2; j++){
+                fprintf(my_file, "%d\t", my_image_after[i][j]);   
+            }
+            fprintf(my_file, "\n");   
+        }
+        
+        fclose(my_file);
     } // End if e)
     /* Right column processes - except from first and last process in this column - active neighbours N, S, SW, W, NW */
     else if(my_rank % procs_per_line == procs_per_line_1){
@@ -1763,20 +1814,6 @@ int main(void){
                 } // End if NW
             } // End for - Wait any
             
-            char fileName[10] = "";
-            sprintf(fileName,"File%dB",my_rank);
-
-            FILE* my_file = fopen(fileName, "w");
-
-            for(i = 0; i < my_height_incr_2; i++){
-                for(j = 0; j < my_width_incr_2; j++){
-                    fprintf(my_file, "%d\t", my_image_after[i][j]);
-                }
-                fprintf(my_file, "\n");
-            }
-
-            fclose(my_file);
-
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
@@ -1791,6 +1828,20 @@ int main(void){
             for(i = 1; i < my_height_incr_2; i++)
                 my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
+        
+        char fileName[10]="";
+        sprintf(fileName,"File%dB",my_rank);
+
+        FILE* my_file = fopen(fileName, "w");
+        for(i = 0; i < my_height_incr_2; i++){
+            for(j = 0; j < my_width_incr_2; j++){
+                fprintf(my_file, "%d\t", my_image_after[i][j]);   
+            }
+            fprintf(my_file, "\n");   
+        }
+        
+        fclose(my_file);
+
     } // End if f)
     /* Last line processes - except from first and last process in this line - active neighbours N, NE, E, W, NW */
     else if(my_rank > procs_per_line * procs_per_line_1){
@@ -2079,20 +2130,6 @@ int main(void){
                 } // End if NW
             } // End for - Wait any
 
-            char fileName[10]="";
-            sprintf(fileName,"File%dB",my_rank);
-
-            FILE* my_file = fopen(fileName, "w");
-
-            for(i = 0; i < my_height_incr_2; i++){
-                for(j = 0; j < my_width_incr_2; j++){
-                    fprintf(my_file, "%d\t", my_image_after[i][j]);
-                }
-                fprintf(my_file, "\n");
-            }
-
-            fclose(my_file);
-
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
@@ -2107,6 +2144,19 @@ int main(void){
             for(i = 1; i < (my_height_incr_2); i++)
                 my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
+        
+        char fileName[10]="";
+        sprintf(fileName,"File%dB",my_rank);
+
+        FILE* my_file = fopen(fileName, "w");
+        for(i = 0; i < my_height_incr_2; i++){
+            for(j = 0; j < my_width_incr_2; j++){
+                fprintf(my_file, "%d\t", my_image_after[i][j]);   
+            }
+            fprintf(my_file, "\n");   
+        }
+        
+        fclose(my_file);
     } // End if g)
     /* Left column processes - except from first and last process in this column - active neighbours N, NE, E, SE, S */
     else if(my_rank % procs_per_line == 0){
@@ -2392,20 +2442,6 @@ int main(void){
                 } // End if S
             } // End for - Wait any
             
-            char fileName[10]="";
-            sprintf(fileName,"File%dB",my_rank);
-
-            FILE* my_file = fopen(fileName, "w");
-
-            for(i = 0; i < my_height_incr_2; i++){
-                for(j = 0; j < my_width_incr_2; j++){
-                    fprintf(my_file, "%d\t", my_image_after[i][j]);
-                }
-                fprintf(my_file, "\n");
-            }
-
-            fclose(my_file);
-
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
@@ -2420,6 +2456,19 @@ int main(void){
             for(i = 1; i < (my_height_incr_2); i++)
                 my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
+        
+        char fileName[10]="";
+        sprintf(fileName,"File%dB",my_rank);
+
+        FILE* my_file = fopen(fileName, "w");
+        for(i = 0; i < my_height_incr_2; i++){
+            for(j = 0; j < my_width_incr_2; j++){
+                fprintf(my_file, "%d\t", my_image_after[i][j]);   
+            }
+            fprintf(my_file, "\n");   
+        }
+        
+        fclose(my_file);
     } // End if h)
     /* Inner processes - all neighbours are active */
     else{
@@ -2803,18 +2852,6 @@ int main(void){
                 } // End if NW 
             } // End for
             
-            char fileName[10]="";
-            sprintf(fileName,"File%dB",my_rank);
-
-            FILE* my_file = fopen(fileName, "w");
-
-            for(i = 0; i < my_height_incr_2; i++){
-                for(j = 0; j < my_width_incr_2; j++){
-                    fprintf(my_file, "%d\t", my_image_after[i][j]);
-                }
-                fprintf(my_file, "\n");
-            }
-
             fclose(my_file);
 
             /* Wait all pixles to be send before to procceeding to the next loop */
@@ -2831,6 +2868,19 @@ int main(void){
             for(i = 1; i < (my_height_incr_2); i++)
                 my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
+        
+        char fileName[10]="";
+        sprintf(fileName,"File%dB",my_rank);
+
+        FILE* my_file = fopen(fileName, "w");
+        for(i = 0; i < my_height_incr_2; i++){
+            for(j = 0; j < my_width_incr_2; j++){
+                fprintf(my_file, "%d\t", my_image_after[i][j]);   
+            }
+            fprintf(my_file, "\n");   
+        }
+        
+        fclose(my_file);
     } // End else i)
 
     /* Free memory */
