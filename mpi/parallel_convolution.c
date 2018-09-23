@@ -1446,7 +1446,7 @@ int main(void){
                     } // End if corner
                 } // End if W
             } // End for - Wait any
-
+                        
             char fileName[10]="";
             sprintf(fileName,"File%dB",my_rank);
 
