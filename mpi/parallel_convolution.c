@@ -197,9 +197,9 @@ int main(void){
 
     */
 
-    /* The resolution of the image that each process has */
-    int my_width, my_width_1, my_width_2;
-    int my_height, my_height_1, my_height_2;
+    /* The resolution of the image that each process has - Add some frequent vars */
+    int my_width, my_width_incr_1, my_width_decr_1, my_width_incr_2;
+    int my_height, my_height_incr_1, my_height_decr_1, my_height_incr_2;
 
     /* If width or height is not perfectly divided into processes, share */
     /* the n remaining pixels to the first n processes                   */
@@ -214,11 +214,14 @@ int main(void){
         my_height = my_args.height_per_process;
 
     /* Fix frequent sums into new variables(height and width of image including hallow points etc) */
-    my_width_1 = my_width + 1;
-    my_height_1 = my_height + 1;
+    my_width_incr_1 = my_width + 1;
+    my_height_incr_1 = my_height + 1;
 
-    my_width_2 = my_width + 2;
-    my_height_2 = my_height + 2;
+    my_width_incr_2 = my_width_incr_1 + 1;
+    my_height_incr_2 = my_height_incr_1 + 1;
+
+    my_width_decr_1 = my_width - 1;
+    my_height_decr_1 = my_height - 1;
 
     /* For random images, set the seed differently to each process, in order */
     /* to have a fully random image and not repetitive cells                 */
@@ -231,51 +234,51 @@ int main(void){
     int** my_image_before, **my_image_after, *tmp_ptr; // Tmp for swapping
 
     /* Allocate pointers for height */
-    my_image_before = malloc((my_height_2) * sizeof(int*));
+    my_image_before = malloc((my_height_incr_2) * sizeof(int*));
     if(my_image_before == NULL)
         MPI_Abort(MPI_COMM_WORLD, error);
 
     /* Allocate a contiguous array */
-    my_image_before[0] = malloc((my_height_2) * (my_width_2) * sizeof(int));
+    my_image_before[0] = malloc((my_height_incr_2) * (my_width_incr_2) * sizeof(int));
     if(my_image_before[0] == NULL)
         MPI_Abort(MPI_COMM_WORLD, error);
 
     /* Fix array(rows) */
-    for(i = 1; i < (my_height_2); i++)
-        my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+    for(i = 1; i < (my_height_incr_2); i++)
+        my_image_before[i] = &(my_image_before[0][i*(my_width_incr_2)]);
 
     /* Fill initial image with random numbers */
-    for(i = 1; i <  my_height_1; i++)
-        for(j = 1; j < my_width_1; j++)
+    for(i = 1; i <  my_height_incr_1; i++)
+        for(j = 1; j < my_width_incr_1; j++)
             my_image_before[i][j] = rand() % 256;
 
     /* Set edges(hallow points, -1 for now, until neighbours send theirs) */
-    for(i = 0; i < my_height_2; i++){
+    for(i = 0; i < my_height_incr_2; i++){
         my_image_before[i][0] = -1;
-        my_image_before[i][my_width + 1] = -1;
+        my_image_before[i][my_width_incr_1] = -1;
     }
 
-    for(j = 0; j < my_width_2; j++){
+    for(j = 0; j < my_width_incr_2; j++){
         my_image_before[0][j] = -1;
-        my_image_before[my_height_1][j] = -1;
+        my_image_before[my_height_incr_1][j] = -1;
     }
 
     /* Allocate an image to save the result */
-    my_image_after = malloc((my_height_2) * sizeof(int*));
+    my_image_after = malloc((my_height_incr_2) * sizeof(int*));
     if(my_image_after == NULL)
         MPI_Abort(MPI_COMM_WORLD, error);
 
     /* Allocate a contiguous array */
-    my_image_after[0] = malloc((my_height_2) * (my_width_2) * sizeof(int));
+    my_image_after[0] = malloc((my_height_incr_2) * (my_width_incr_2) * sizeof(int));
     if(my_image_after[0] == NULL)
         MPI_Abort(MPI_COMM_WORLD, error);
     
     /* Fix array */
-    for(i = 1; i < (my_height_2); i++)
-        my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+    for(i = 1; i < (my_height_incr_2); i++)
+        my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
 
-    for(i = 0; i <  my_height_2; i++)
-        for(j = 0; j < my_width_2; j++)
+    for(i = 0; i <  my_height_incr_2; i++)
+        for(j = 0; j < my_width_incr_2; j++)
             my_image_after[i][j] = 0;
 
     char fileName[10] = "";
@@ -283,8 +286,8 @@ int main(void){
 
     FILE* my_file = fopen(fileName, "w");
 
-    for(i = 0; i < my_height_2; i++){
-        for(j = 0; j < my_width_2; j++){
+    for(i = 0; i < my_height_incr_2; i++){
+        for(j = 0; j < my_width_incr_2; j++){
             fprintf(my_file, "%d\t", my_image_before[i][j]);
         }
         fprintf(my_file, "\n");
@@ -294,7 +297,7 @@ int main(void){
     
     /* Set columns type for sending columns East and West */
     MPI_Datatype column_type;
-    MPI_Type_vector(my_height, 1, my_width_2, MPI_INT, &column_type);
+    MPI_Type_vector(my_height, 1, my_width_incr_2, MPI_INT, &column_type);
     MPI_Type_commit(&column_type);
 
     /* Initialize communication with neighbours */
@@ -313,11 +316,11 @@ int main(void){
 
     /* Receive from all neighbours */
     MPI_Recv_init(&my_image_before[0][1], my_width, MPI_INT, neighbours[N], N, MPI_COMM_WORLD, &recv_requests[N]);
-    MPI_Recv_init(&my_image_before[0][my_width + 1], 1, MPI_INT, neighbours[NE], NE, MPI_COMM_WORLD, &recv_requests[NE]);
-    MPI_Recv_init(&my_image_before[1][my_width + 1], 1, column_type, neighbours[E], E, MPI_COMM_WORLD, &recv_requests[E]);
-    MPI_Recv_init(&my_image_before[my_height + 1][my_width + 1], 1, MPI_INT, neighbours[SE], SE, MPI_COMM_WORLD, &recv_requests[SE]);
-    MPI_Recv_init(&my_image_before[my_height + 1][1], my_width, MPI_INT, neighbours[S], S, MPI_COMM_WORLD, &recv_requests[S]);
-    MPI_Recv_init(&my_image_before[my_height + 1][0], 1, MPI_INT, neighbours[SW],SW,MPI_COMM_WORLD,&recv_requests[SW]);
+    MPI_Recv_init(&my_image_before[0][my_width_incr_1], 1, MPI_INT, neighbours[NE], NE, MPI_COMM_WORLD, &recv_requests[NE]);
+    MPI_Recv_init(&my_image_before[1][my_width_incr_1], 1, column_type, neighbours[E], E, MPI_COMM_WORLD, &recv_requests[E]);
+    MPI_Recv_init(&my_image_before[my_height_incr_1][my_width_incr_1], 1, MPI_INT, neighbours[SE], SE, MPI_COMM_WORLD, &recv_requests[SE]);
+    MPI_Recv_init(&my_image_before[my_height_incr_1][1], my_width, MPI_INT, neighbours[S], S, MPI_COMM_WORLD, &recv_requests[S]);
+    MPI_Recv_init(&my_image_before[my_height_incr_1][0], 1, MPI_INT, neighbours[SW],SW,MPI_COMM_WORLD,&recv_requests[SW]);
     MPI_Recv_init(&my_image_before[1][0], 1, column_type, neighbours[W], W, MPI_COMM_WORLD, &recv_requests[W]);
     MPI_Recv_init(&my_image_before[0][0], 1, MPI_INT, neighbours[NW], NW, MPI_COMM_WORLD, &recv_requests[NW]);
 
@@ -425,13 +428,13 @@ int main(void){
                     for(i = 2; i < my_height; i++){
                         my_image_after[i][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
                                                         my_image_before[i - 1][my_width] * my_args.filter[0][1] +
-                                                        my_image_before[i - 1][my_width + 1] * my_args.filter[0][2] +
-                                                        my_image_before[i][my_width + 1] * my_args.filter[1][2] +
-                                                        my_image_before[i + 1][my_width + 1] * my_args.filter[2][2] +
+                                                        my_image_before[i - 1][my_width_incr_1] * my_args.filter[0][2] +
+                                                        my_image_before[i][my_width_incr_1] * my_args.filter[1][2] +
+                                                        my_image_before[i + 1][my_width_incr_1] * my_args.filter[2][2] +
                                                         my_image_before[i + 1][my_width] * my_args.filter[2][1] +
-                                                        my_image_before[i + 1][my_width - 1] * my_args.filter[2][0] +
-                                                        my_image_before[i][my_width - 1] * my_args.filter[1][0] +
-                                                        my_image_before[i - 1][my_width - 1] * my_args.filter[0][0]);
+                                                        my_image_before[i + 1][my_width_decr_1] * my_args.filter[2][0] +
+                                                        my_image_before[i][my_width_decr_1] * my_args.filter[1][0] +
+                                                        my_image_before[i - 1][my_width_decr_1] * my_args.filter[0][0]);
 
                         /* Truncated unexpected values */
                         if(my_image_after[i][my_width] < 0)
@@ -442,11 +445,11 @@ int main(void){
 
                     /* Right upper corner */
                     my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
-                                                    my_image_before[1][my_width + 1] * my_args.filter[1][2] +
-                                                    my_image_before[2][my_width + 1] * my_args.filter[2][2] +
+                                                    my_image_before[1][my_width_incr_1] * my_args.filter[1][2] +
+                                                    my_image_before[2][my_width_incr_1] * my_args.filter[2][2] +
                                                     my_image_before[2][my_width] * my_args.filter[2][1] +
-                                                    my_image_before[2][my_width - 1] * my_args.filter[2][0] +
-                                                    my_image_before[1][my_width - 1] * my_args.filter[1][0]);
+                                                    my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
+                                                    my_image_before[1][my_width_decr_1] * my_args.filter[1][0]);
 
                     /* Truncated unexpected values */
                     if(my_image_after[1][my_width] < 0)
@@ -459,14 +462,14 @@ int main(void){
                     /* Last line */
                     for(j = 2; j < my_width; j++){
                         my_image_after[my_height][j] = (int)(my_image_before[my_height][j] * my_args.filter[1][1] +
-                                                        my_image_before[my_height - 1][j] * my_args.filter[0][1] +
-                                                        my_image_before[my_height - 1][j + 1] * my_args.filter[0][2] +
+                                                        my_image_before[my_height_decr_1][j] * my_args.filter[0][1] +
+                                                        my_image_before[my_height_decr_1][j + 1] * my_args.filter[0][2] +
                                                         my_image_before[my_height][j + 1] * my_args.filter[1][2] +
-                                                        my_image_before[my_height + 1][j + 1] * my_args.filter[2][2] +
-                                                        my_image_before[my_height + 1][j] * my_args.filter[2][1] +
-                                                        my_image_before[my_height + 1][j - 1] * my_args.filter[2][0] +
+                                                        my_image_before[my_height_incr_1][j + 1] * my_args.filter[2][2] +
+                                                        my_image_before[my_height_incr_1][j] * my_args.filter[2][1] +
+                                                        my_image_before[my_height_incr_1][j - 1] * my_args.filter[2][0] +
                                                         my_image_before[my_height][j - 1] * my_args.filter[1][0] +
-                                                        my_image_before[my_height - 1][j - 1] * my_args.filter[0][0]);
+                                                        my_image_before[my_height_decr_1][j - 1] * my_args.filter[0][0]);
 
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][j] < 0)
@@ -477,11 +480,11 @@ int main(void){
 
                     /* Left lower corner */
                     my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
-                                                    my_image_before[my_height - 1][1] * my_args.filter[0][1] +
-                                                    my_image_before[my_height - 1][2] * my_args.filter[0][2] +
+                                                    my_image_before[my_height_decr_1][1] * my_args.filter[0][1] +
+                                                    my_image_before[my_height_decr_1][2] * my_args.filter[0][2] +
                                                     my_image_before[my_height][2] * my_args.filter[1][2] +
-                                                    my_image_before[my_height + 1][2] * my_args.filter[2][2] +
-                                                    my_image_before[my_height + 1][1] * my_args.filter[2][1]);
+                                                    my_image_before[my_height_incr_1][2] * my_args.filter[2][2] +
+                                                    my_image_before[my_height_incr_1][1] * my_args.filter[2][1]);
 
                     /* Truncated unexpected values */
                     if(my_image_after[my_height][1] < 0)
@@ -493,14 +496,14 @@ int main(void){
             
             /* Convolute right lower corner */
             my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
-                                                    my_image_before[my_height - 1][my_width] * my_args.filter[0][1] +
-                                                    my_image_before[my_height - 1][my_width + 1] * my_args.filter[0][2] +
-                                                    my_image_before[my_height][my_width + 1] * my_args.filter[1][2] +
-                                                    my_image_before[my_height + 1][my_width + 1] * my_args.filter[2][2] +
-                                                    my_image_before[my_height + 1][my_width] * my_args.filter[2][1] +
-                                                    my_image_before[my_height + 1][my_width - 1] * my_args.filter[2][0] +
-                                                    my_image_before[my_height][my_width - 1] * my_args.filter[1][0] +
-                                                    my_image_before[my_height - 1][my_width - 1] * my_args.filter[0][0]);
+                                                    my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
+                                                    my_image_before[my_height_decr_1][my_width_incr_1] * my_args.filter[0][2] +
+                                                    my_image_before[my_height][my_width_incr_1] * my_args.filter[1][2] +
+                                                    my_image_before[my_height_incr_1][my_width_incr_1] * my_args.filter[2][2] +
+                                                    my_image_before[my_height_incr_1][my_width] * my_args.filter[2][1] +
+                                                    my_image_before[my_height_incr_1][my_width_decr_1] * my_args.filter[2][0] +
+                                                    my_image_before[my_height][my_width_decr_1] * my_args.filter[1][0] +
+                                                    my_image_before[my_height_decr_1][my_width_decr_1] * my_args.filter[0][0]);
             /* Truncated unexpected values */
             if(my_image_after[my_height][my_width] < 0)
                 my_image_after[my_height][my_width] = 0;
@@ -512,8 +515,8 @@ int main(void){
 
             FILE* my_file = fopen(fileName, "w");
 
-            for(i = 0; i < my_height + 2; i++){
-                for(j = 0; j < my_width + 2; j++){
+            for(i = 0; i < my_height_incr_2; i++){
+                for(j = 0; j < my_width_incr_2; j++){
                     fprintf(my_file, "%d\t", my_image_after[i][j]);
                 }
                 fprintf(my_file, "\n");
@@ -528,12 +531,12 @@ int main(void){
             tmp_ptr = my_image_before[0];
 
             my_image_before[0] = my_image_after[0];
-            for(i = 1; i < my_height_2; i++)
-                my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+            for(i = 1; i < my_height_incr_2; i++)
+                my_image_before[i] = &(my_image_before[0][i*(my_width_incr_2)]);
 
             my_image_after[0] = tmp_ptr;
-            for(i = 1; i < my_height_2; i++)
-                my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+            for(i = 1; i < my_height_incr_2; i++)
+                my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
     } // End if a)
     /* Right upper process - active neighbours S, SW, W */
@@ -580,9 +583,9 @@ int main(void){
                 my_image_after[i][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
                                                 my_image_before[i - 1][my_width] * my_args.filter[0][1] +
                                                 my_image_before[i + 1][my_width] * my_args.filter[2][1] +
-                                                my_image_before[i + 1][my_width - 1] * my_args.filter[2][0] +
-                                                my_image_before[i][my_width - 1] * my_args.filter[1][0] +
-                                                my_image_before[i - 1][my_width - 1] * my_args.filter[0][0]);
+                                                my_image_before[i + 1][my_width_decr_1] * my_args.filter[2][0] +
+                                                my_image_before[i][my_width_decr_1] * my_args.filter[1][0] +
+                                                my_image_before[i - 1][my_width_decr_1] * my_args.filter[0][0]);
 
                 /* Truncated unexpected values */
                 if(my_image_after[i][my_width] < 0)
@@ -594,8 +597,8 @@ int main(void){
             /* Right upper corner */
             my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
                                             my_image_before[2][my_width] * my_args.filter[2][1] +
-                                            my_image_before[2][my_width - 1] * my_args.filter[2][0] +
-                                            my_image_before[1][my_width - 1] * my_args.filter[1][0]);
+                                            my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
+                                            my_image_before[1][my_width_decr_1] * my_args.filter[1][0]);
 
             /* Truncated unexpected values */
             if(my_image_after[1][my_width] < 0)
@@ -668,14 +671,14 @@ int main(void){
                     /* Last line */
                     for(j = 2; j < my_width; j++){
                         my_image_after[my_height][j] = (int)(my_image_before[my_height][j] * my_args.filter[1][1] +
-                                                        my_image_before[my_height - 1][j] * my_args.filter[0][1] +
-                                                        my_image_before[my_height - 1][j + 1] * my_args.filter[0][2] +
+                                                        my_image_before[my_height_decr_1][j] * my_args.filter[0][1] +
+                                                        my_image_before[my_height_decr_1][j + 1] * my_args.filter[0][2] +
                                                         my_image_before[my_height][j + 1] * my_args.filter[1][2] +
-                                                        my_image_before[my_height + 1][j + 1] * my_args.filter[2][2] +
-                                                        my_image_before[my_height + 1][j] * my_args.filter[2][1] +
-                                                        my_image_before[my_height + 1][j - 1] * my_args.filter[2][0] +
+                                                        my_image_before[my_height_incr_1][j + 1] * my_args.filter[2][2] +
+                                                        my_image_before[my_height_incr_1][j] * my_args.filter[2][1] +
+                                                        my_image_before[my_height_incr_1][j - 1] * my_args.filter[2][0] +
                                                         my_image_before[my_height][j - 1] * my_args.filter[1][0] +
-                                                        my_image_before[my_height - 1][j - 1] * my_args.filter[0][0]);
+                                                        my_image_before[my_height_decr_1][j - 1] * my_args.filter[0][0]);
 
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][j] < 0)
@@ -686,11 +689,11 @@ int main(void){
 
                     /* Right lower corner */
                     my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
-                                                            my_image_before[my_height - 1][my_width] * my_args.filter[0][1] +
-                                                            my_image_before[my_height + 1][my_width] * my_args.filter[2][1] +
-                                                            my_image_before[my_height + 1][my_width - 1] * my_args.filter[2][0] +
-                                                            my_image_before[my_height][my_width - 1] * my_args.filter[1][0] +
-                                                            my_image_before[my_height - 1][my_width - 1] * my_args.filter[0][0]);
+                                                            my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
+                                                            my_image_before[my_height_incr_1][my_width] * my_args.filter[2][1] +
+                                                            my_image_before[my_height_incr_1][my_width_decr_1] * my_args.filter[2][0] +
+                                                            my_image_before[my_height][my_width_decr_1] * my_args.filter[1][0] +
+                                                            my_image_before[my_height_decr_1][my_width_decr_1] * my_args.filter[0][0]);
                     /* Truncated unexpected values */
                     if(my_image_after[my_height][my_width] < 0)
                         my_image_after[my_height][my_width] = 0;
@@ -701,14 +704,14 @@ int main(void){
 
             /* Convolute left lower corner */
             my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
-                                            my_image_before[my_height - 1][1] * my_args.filter[0][1] +
-                                            my_image_before[my_height - 1][2] * my_args.filter[0][2] +
+                                            my_image_before[my_height_decr_1][1] * my_args.filter[0][1] +
+                                            my_image_before[my_height_decr_1][2] * my_args.filter[0][2] +
                                             my_image_before[my_height][2] * my_args.filter[1][2] +
-                                            my_image_before[my_height + 1][2] * my_args.filter[2][2] +
-                                            my_image_before[my_height + 1][1] * my_args.filter[2][1] +
-                                            my_image_before[my_height + 1][0] * my_args.filter[2][0] +
+                                            my_image_before[my_height_incr_1][2] * my_args.filter[2][2] +
+                                            my_image_before[my_height_incr_1][1] * my_args.filter[2][1] +
+                                            my_image_before[my_height_incr_1][0] * my_args.filter[2][0] +
                                             my_image_before[my_height][0] * my_args.filter[1][0] +
-                                            my_image_before[my_height - 1][0] * my_args.filter[0][0]);
+                                            my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
             
             /* Truncated unexpected values */
             if(my_image_after[my_height][1] < 0)
@@ -721,8 +724,8 @@ int main(void){
 
             FILE* my_file = fopen(fileName, "w");
 
-            for(i = 0; i < my_height + 2; i++){
-                for(j = 0; j < my_width + 2; j++){
+            for(i = 0; i < my_height_incr_2; i++){
+                for(j = 0; j < my_width_incr_2; j++){
                     fprintf(my_file, "%d\t", my_image_after[i][j]);
                 }
                 fprintf(my_file, "\n");
@@ -737,12 +740,12 @@ int main(void){
             tmp_ptr = my_image_before[0];
 
             my_image_before[0] = my_image_after[0];
-            for(i = 1; i < my_height_2; i++)
-                my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+            for(i = 1; i < my_height_incr_2; i++)
+                my_image_before[i] = &(my_image_before[0][i*(my_width_incr_2)]);
 
             my_image_after[0] = tmp_ptr;
-            for(i = 1; i < my_height_2; i++)
-                my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+            for(i = 1; i < my_height_incr_2; i++)
+                my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
     } // End if b)
     /* Right lower process - active neighbours W, NW, N */
@@ -789,9 +792,9 @@ int main(void){
                 my_image_after[i][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
                                                 my_image_before[i - 1][my_width] * my_args.filter[0][1] +
                                                 my_image_before[i + 1][my_width] * my_args.filter[2][1] +
-                                                my_image_before[i + 1][my_width - 1] * my_args.filter[2][0] +
-                                                my_image_before[i][my_width - 1] * my_args.filter[1][0] +
-                                                my_image_before[i - 1][my_width - 1] * my_args.filter[0][0]);
+                                                my_image_before[i + 1][my_width_decr_1] * my_args.filter[2][0] +
+                                                my_image_before[i][my_width_decr_1] * my_args.filter[1][0] +
+                                                my_image_before[i - 1][my_width_decr_1] * my_args.filter[0][0]);
 
                 /* Truncated unexpected values */
                 if(my_image_after[i][my_width] < 0)
@@ -802,9 +805,9 @@ int main(void){
 
             /* Right lower corner */
             my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
-                                                    my_image_before[my_height - 1][my_width] * my_args.filter[0][1] +
-                                                    my_image_before[my_height][my_width - 1] * my_args.filter[1][0] +
-                                                    my_image_before[my_height - 1][my_width - 1] * my_args.filter[0][0]);
+                                                    my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
+                                                    my_image_before[my_height][my_width_decr_1] * my_args.filter[1][0] +
+                                                    my_image_before[my_height_decr_1][my_width_decr_1] * my_args.filter[0][0]);
 
             /* Truncated unexpected values */
             if(my_image_after[my_height][my_width] < 0)
@@ -815,11 +818,11 @@ int main(void){
             /* Last line - except from left and right lower corners */
             for(j = 2; j < my_width; j++){
                 my_image_after[my_height][j] = (int)(my_image_before[my_height][j] * my_args.filter[1][1] +
-                                                my_image_before[my_height - 1][j] * my_args.filter[0][1] +
-                                                my_image_before[my_height - 1][j + 1] * my_args.filter[0][2] +
+                                                my_image_before[my_height_decr_1][j] * my_args.filter[0][1] +
+                                                my_image_before[my_height_decr_1][j + 1] * my_args.filter[0][2] +
                                                 my_image_before[my_height][j + 1] * my_args.filter[1][2] +
                                                 my_image_before[my_height][j - 1] * my_args.filter[2][0] +
-                                                my_image_before[my_height - 1][j - 1] * my_args.filter[0][0]);
+                                                my_image_before[my_height_decr_1][j - 1] * my_args.filter[0][0]);
 
                 /* Truncated unexpected values */
                 if(my_image_after[my_height][j] < 0)
@@ -860,11 +863,11 @@ int main(void){
 
                     /* Left lower corner */
                     my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
-                                                    my_image_before[my_height - 1][1] * my_args.filter[0][1] +
-                                                    my_image_before[my_height - 1][2] * my_args.filter[0][2] +
+                                                    my_image_before[my_height_decr_1][1] * my_args.filter[0][1] +
+                                                    my_image_before[my_height_decr_1][2] * my_args.filter[0][2] +
                                                     my_image_before[my_height][2] * my_args.filter[1][2] +
                                                     my_image_before[my_height][0] * my_args.filter[1][0] +
-                                                    my_image_before[my_height - 1][0] * my_args.filter[0][0]);
+                                                    my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
                     
                     /* Truncated unexpected values */
                     if(my_image_after[my_height][1] < 0)
@@ -897,9 +900,9 @@ int main(void){
                     my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
                                                     my_image_before[0][my_width] * my_args.filter[0][1] +
                                                     my_image_before[2][my_width] * my_args.filter[2][1] +
-                                                    my_image_before[2][my_width - 1] * my_args.filter[2][0] +
-                                                    my_image_before[1][my_width - 1] * my_args.filter[1][0] +
-                                                    my_image_before[0][my_width - 1] * my_args.filter[0][0]);
+                                                    my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
+                                                    my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
+                                                    my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
                     /* Truncated unexpected values */
                     if(my_image_after[1][my_width] < 0)
                         my_image_after[1][my_width] = 0;
@@ -930,8 +933,8 @@ int main(void){
 
             FILE* my_file = fopen(fileName, "w");
 
-            for(i = 0; i < my_height + 2; i++){
-                for(j = 0; j < my_width + 2; j++){
+            for(i = 0; i < my_height_incr_2; i++){
+                for(j = 0; j < my_width_incr_2; j++){
                     fprintf(my_file, "%d\t", my_image_after[i][j]);
                 }
                 fprintf(my_file, "\n");
@@ -946,12 +949,12 @@ int main(void){
             tmp_ptr = my_image_before[0];
 
             my_image_before[0] = my_image_after[0];
-            for(i = 1; i < my_height_2; i++)
-                my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+            for(i = 1; i < my_height_incr_2; i++)
+                my_image_before[i] = &(my_image_before[0][i*(my_width_incr_2)]);
 
             my_image_after[0] = tmp_ptr;
-            for(i = 1; i < (my_height_2); i++)
-                my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+            for(i = 1; i < (my_height_incr_2); i++)
+                my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
     } // End if c)
     /* Left lower process - active neighbours N, NE, E */
@@ -1011,8 +1014,8 @@ int main(void){
 
             /* Left lower corner */
             my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
-                                            my_image_before[my_height - 1][1] * my_args.filter[0][1] +
-                                            my_image_before[my_height - 1][2] * my_args.filter[0][2] +
+                                            my_image_before[my_height_decr_1][1] * my_args.filter[0][1] +
+                                            my_image_before[my_height_decr_1][2] * my_args.filter[0][2] +
                                             my_image_before[my_height][2] * my_args.filter[1][2]);
 
             /* Truncated unexpected values */
@@ -1024,11 +1027,11 @@ int main(void){
             /* Last line - except from left and right lower corners */
             for(j = 2; j < my_width; j++){
                 my_image_after[my_height][j] = (int)(my_image_before[my_height][j] * my_args.filter[1][1] +
-                                                my_image_before[my_height - 1][j] * my_args.filter[0][1] +
-                                                my_image_before[my_height - 1][j + 1] * my_args.filter[0][2] +
+                                                my_image_before[my_height_decr_1][j] * my_args.filter[0][1] +
+                                                my_image_before[my_height_decr_1][j + 1] * my_args.filter[0][2] +
                                                 my_image_before[my_height][j + 1] * my_args.filter[1][2] +
                                                 my_image_before[my_height][j - 1] * my_args.filter[2][0] +
-                                                my_image_before[my_height - 1][j - 1] * my_args.filter[0][0]);
+                                                my_image_before[my_height_decr_1][j - 1] * my_args.filter[0][0]);
 
                 /* Truncated unexpected values */
                 if(my_image_after[my_height][j] < 0)
@@ -1052,13 +1055,13 @@ int main(void){
                     for(i = 2; i < my_height; i++){
                         my_image_after[i][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
                                                         my_image_before[i - 1][my_width] * my_args.filter[0][1] +
-                                                        my_image_before[i - 1][my_width + 1] * my_args.filter[0][2] +
-                                                        my_image_before[i][my_width + 1] * my_args.filter[1][2] +
-                                                        my_image_before[i + 1][my_width + 1] * my_args.filter[2][2] +
+                                                        my_image_before[i - 1][my_width_incr_1] * my_args.filter[0][2] +
+                                                        my_image_before[i][my_width_incr_1] * my_args.filter[1][2] +
+                                                        my_image_before[i + 1][my_width_incr_1] * my_args.filter[2][2] +
                                                         my_image_before[i + 1][my_width] * my_args.filter[2][1] +
-                                                        my_image_before[i + 1][my_width - 1] * my_args.filter[2][0] +
-                                                        my_image_before[i][my_width - 1] * my_args.filter[1][0] +
-                                                        my_image_before[i - 1][my_width - 1] * my_args.filter[0][0]);
+                                                        my_image_before[i + 1][my_width_decr_1] * my_args.filter[2][0] +
+                                                        my_image_before[i][my_width_decr_1] * my_args.filter[1][0] +
+                                                        my_image_before[i - 1][my_width_decr_1] * my_args.filter[0][0]);
 
                         /* Truncated unexpected values */
                         if(my_image_after[i][my_width] < 0)
@@ -1069,11 +1072,11 @@ int main(void){
 
                     /* Right lower corner */
                     my_image_after[my_height][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
-                                                        my_image_before[my_height - 1][my_width] * my_args.filter[0][1] +
-                                                        my_image_before[my_height - 1][my_width + 1] * my_args.filter[0][2] +
-                                                        my_image_before[my_height][my_width + 1] * my_args.filter[1][2] +
-                                                        my_image_before[my_height][my_width - 1] * my_args.filter[1][0] +
-                                                        my_image_before[my_height - 1][my_width - 1] * my_args.filter[0][0]);
+                                                        my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
+                                                        my_image_before[my_height_decr_1][my_width_incr_1] * my_args.filter[0][2] +
+                                                        my_image_before[my_height][my_width_incr_1] * my_args.filter[1][2] +
+                                                        my_image_before[my_height][my_width_decr_1] * my_args.filter[1][0] +
+                                                        my_image_before[my_height_decr_1][my_width_decr_1] * my_args.filter[0][0]);
                     
                     /* Truncated unexpected values */
                     if(my_image_after[my_height][my_width] < 0)
@@ -1121,13 +1124,13 @@ int main(void){
             /* Convolute right upper corner */
             my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
                                             my_image_before[0][my_width] * my_args.filter[0][1] +
-                                            my_image_before[0][my_width + 1] * my_args.filter[0][2] +
-                                            my_image_before[1][my_width + 1] * my_args.filter[1][2] +
-                                            my_image_before[2][my_width + 1] * my_args.filter[2][2] +
+                                            my_image_before[0][my_width_incr_1] * my_args.filter[0][2] +
+                                            my_image_before[1][my_width_incr_1] * my_args.filter[1][2] +
+                                            my_image_before[2][my_width_incr_1] * my_args.filter[2][2] +
                                             my_image_before[2][my_width] * my_args.filter[2][1] +
-                                            my_image_before[2][my_width - 1] * my_args.filter[2][0] +
-                                            my_image_before[1][my_width - 1] * my_args.filter[1][0] +
-                                            my_image_before[0][my_width - 1] * my_args.filter[0][0]);
+                                            my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
+                                            my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
+                                            my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
             
             /* Truncated unexpected values */
             if(my_image_after[1][my_width] < 0)
@@ -1140,8 +1143,8 @@ int main(void){
 
             FILE* my_file = fopen(fileName, "w");
 
-            for(i = 0; i < my_height + 2; i++){
-                for(j = 0; j < my_width + 2; j++){
+            for(i = 0; i < my_height_incr_2; i++){
+                for(j = 0; j < my_width_incr_2; j++){
                     fprintf(my_file, "%d\t", my_image_after[i][j]);
                 }
                 fprintf(my_file, "\n");
@@ -1156,12 +1159,12 @@ int main(void){
             tmp_ptr = my_image_before[0];
     
             my_image_before[0] = my_image_after[0];
-            for(i = 1; i < my_height_2; i++)
-                my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+            for(i = 1; i < my_height_incr_2; i++)
+                my_image_before[i] = &(my_image_before[0][i*(my_width_incr_2)]);
 
             my_image_after[0] = tmp_ptr;
-            for(i = 1; i < (my_height_2); i++)
-                my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+            for(i = 1; i < (my_height_incr_2); i++)
+                my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
     } // End if d)
     /* First line processes - except from first and last process in this line - active neighbours E, SE , S, SW, W */
@@ -1237,13 +1240,13 @@ int main(void){
                     for(i = 2; i < my_height; i++){
                         my_image_after[i][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
                                                         my_image_before[i - 1][my_width] * my_args.filter[0][1] +
-                                                        my_image_before[i - 1][my_width + 1] * my_args.filter[0][2] +
-                                                        my_image_before[i][my_width + 1] * my_args.filter[1][2] +
-                                                        my_image_before[i + 1][my_width + 1] * my_args.filter[2][2] +
+                                                        my_image_before[i - 1][my_width_incr_1] * my_args.filter[0][2] +
+                                                        my_image_before[i][my_width_incr_1] * my_args.filter[1][2] +
+                                                        my_image_before[i + 1][my_width_incr_1] * my_args.filter[2][2] +
                                                         my_image_before[i + 1][my_width] * my_args.filter[2][1] +
-                                                        my_image_before[i + 1][my_width - 1] * my_args.filter[2][0] +
-                                                        my_image_before[i][my_width - 1] * my_args.filter[1][0] +
-                                                        my_image_before[i - 1][my_width - 1] * my_args.filter[0][0]);
+                                                        my_image_before[i + 1][my_width_decr_1] * my_args.filter[2][0] +
+                                                        my_image_before[i][my_width_decr_1] * my_args.filter[1][0] +
+                                                        my_image_before[i - 1][my_width_decr_1] * my_args.filter[0][0]);
 
                         /* Truncated unexpected values */
                         if(my_image_after[i][my_width] < 0)
@@ -1254,11 +1257,11 @@ int main(void){
 
                     /* Right upper corner */
                     my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
-                                                    my_image_before[1][my_width + 1] * my_args.filter[1][2] +
-                                                    my_image_before[2][my_width + 1] * my_args.filter[2][2] +
+                                                    my_image_before[1][my_width_incr_1] * my_args.filter[1][2] +
+                                                    my_image_before[2][my_width_incr_1] * my_args.filter[2][2] +
                                                     my_image_before[2][my_width] * my_args.filter[2][1] +
-                                                    my_image_before[2][my_width - 1] * my_args.filter[2][0] +
-                                                    my_image_before[1][my_width - 1] * my_args.filter[1][0]);
+                                                    my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
+                                                    my_image_before[1][my_width_decr_1] * my_args.filter[1][0]);
 
                     /* Truncated unexpected values */
                     if(my_image_after[1][my_width] < 0)
@@ -1269,14 +1272,14 @@ int main(void){
                     /* Convolute right lower corner */
                     if(flag_corner_lr == 3){
                         my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
-                                                                my_image_before[my_height - 1][my_width] * my_args.filter[0][1] +
-                                                                my_image_before[my_height - 1][my_width + 1] * my_args.filter[0][2] +
-                                                                my_image_before[my_height][my_width + 1] * my_args.filter[1][2] +
-                                                                my_image_before[my_height + 1][my_width + 1] * my_args.filter[2][2] +
-                                                                my_image_before[my_height + 1][my_width] * my_args.filter[2][1] +
-                                                                my_image_before[my_height + 1][my_width - 1] * my_args.filter[2][0] +
-                                                                my_image_before[my_height][my_width - 1] * my_args.filter[1][0] +
-                                                                my_image_before[my_height - 1][my_width - 1] * my_args.filter[0][0]);
+                                                                my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
+                                                                my_image_before[my_height_decr_1][my_width_incr_1] * my_args.filter[0][2] +
+                                                                my_image_before[my_height][my_width_incr_1] * my_args.filter[1][2] +
+                                                                my_image_before[my_height_incr_1][my_width_incr_1] * my_args.filter[2][2] +
+                                                                my_image_before[my_height_incr_1][my_width] * my_args.filter[2][1] +
+                                                                my_image_before[my_height_incr_1][my_width_decr_1] * my_args.filter[2][0] +
+                                                                my_image_before[my_height][my_width_decr_1] * my_args.filter[1][0] +
+                                                                my_image_before[my_height_decr_1][my_width_decr_1] * my_args.filter[0][0]);
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][my_width] < 0)
                             my_image_after[my_height][my_width] = 0;
@@ -1290,14 +1293,14 @@ int main(void){
 
                     if(flag_corner_lr == 3){
                         my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
-                                                                my_image_before[my_height - 1][my_width] * my_args.filter[0][1] +
-                                                                my_image_before[my_height - 1][my_width + 1] * my_args.filter[0][2] +
-                                                                my_image_before[my_height][my_width + 1] * my_args.filter[1][2] +
-                                                                my_image_before[my_height + 1][my_width + 1] * my_args.filter[2][2] +
-                                                                my_image_before[my_height + 1][my_width] * my_args.filter[2][1] +
-                                                                my_image_before[my_height + 1][my_width - 1] * my_args.filter[2][0] +
-                                                                my_image_before[my_height][my_width - 1] * my_args.filter[1][0] +
-                                                                my_image_before[my_height - 1][my_width - 1] * my_args.filter[0][0]);
+                                                                my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
+                                                                my_image_before[my_height_decr_1][my_width_incr_1] * my_args.filter[0][2] +
+                                                                my_image_before[my_height][my_width_incr_1] * my_args.filter[1][2] +
+                                                                my_image_before[my_height_incr_1][my_width_incr_1] * my_args.filter[2][2] +
+                                                                my_image_before[my_height_incr_1][my_width] * my_args.filter[2][1] +
+                                                                my_image_before[my_height_incr_1][my_width_decr_1] * my_args.filter[2][0] +
+                                                                my_image_before[my_height][my_width_decr_1] * my_args.filter[1][0] +
+                                                                my_image_before[my_height_decr_1][my_width_decr_1] * my_args.filter[0][0]);
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][my_width] < 0)
                             my_image_after[my_height][my_width] = 0;
@@ -1313,14 +1316,14 @@ int main(void){
                     /* Last line */
                     for(j = 2; j < my_width; j++){
                         my_image_after[my_height][j] = (int)(my_image_before[my_height][j] * my_args.filter[1][1] +
-                                                        my_image_before[my_height - 1][j] * my_args.filter[0][1] +
-                                                        my_image_before[my_height - 1][j + 1] * my_args.filter[0][2] +
+                                                        my_image_before[my_height_decr_1][j] * my_args.filter[0][1] +
+                                                        my_image_before[my_height_decr_1][j + 1] * my_args.filter[0][2] +
                                                         my_image_before[my_height][j + 1] * my_args.filter[1][2] +
-                                                        my_image_before[my_height + 1][j + 1] * my_args.filter[2][2] +
-                                                        my_image_before[my_height + 1][j] * my_args.filter[2][1] +
-                                                        my_image_before[my_height + 1][j - 1] * my_args.filter[2][0] +
+                                                        my_image_before[my_height_incr_1][j + 1] * my_args.filter[2][2] +
+                                                        my_image_before[my_height_incr_1][j] * my_args.filter[2][1] +
+                                                        my_image_before[my_height_incr_1][j - 1] * my_args.filter[2][0] +
                                                         my_image_before[my_height][j - 1] * my_args.filter[1][0] +
-                                                        my_image_before[my_height - 1][j - 1] * my_args.filter[0][0]);
+                                                        my_image_before[my_height_decr_1][j - 1] * my_args.filter[0][0]);
 
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][j] < 0)
@@ -1332,14 +1335,14 @@ int main(void){
                     /* Convolute left lower corner */
                     if(flag_corner_ll == 3){
                         my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
-                                                        my_image_before[my_height - 1][1] * my_args.filter[0][1] +
-                                                        my_image_before[my_height - 1][2] * my_args.filter[0][2] +
+                                                        my_image_before[my_height_decr_1][1] * my_args.filter[0][1] +
+                                                        my_image_before[my_height_decr_1][2] * my_args.filter[0][2] +
                                                         my_image_before[my_height][2] * my_args.filter[1][2] +
-                                                        my_image_before[my_height + 1][2] * my_args.filter[2][2] +
-                                                        my_image_before[my_height + 1][1] * my_args.filter[2][1] +
-                                                        my_image_before[my_height + 1][0] * my_args.filter[2][0] +
+                                                        my_image_before[my_height_incr_1][2] * my_args.filter[2][2] +
+                                                        my_image_before[my_height_incr_1][1] * my_args.filter[2][1] +
+                                                        my_image_before[my_height_incr_1][0] * my_args.filter[2][0] +
                                                         my_image_before[my_height][0] * my_args.filter[1][0] +
-                                                        my_image_before[my_height - 1][0] * my_args.filter[0][0]);
+                                                        my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
             
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][1] < 0)
@@ -1351,14 +1354,14 @@ int main(void){
                     /* Convolute right lower corner */
                     if(flag_corner_lr == 3){
                         my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
-                                                                my_image_before[my_height - 1][my_width] * my_args.filter[0][1] +
-                                                                my_image_before[my_height - 1][my_width + 1] * my_args.filter[0][2] +
-                                                                my_image_before[my_height][my_width + 1] * my_args.filter[1][2] +
-                                                                my_image_before[my_height + 1][my_width + 1] * my_args.filter[2][2] +
-                                                                my_image_before[my_height + 1][my_width] * my_args.filter[2][1] +
-                                                                my_image_before[my_height + 1][my_width - 1] * my_args.filter[2][0] +
-                                                                my_image_before[my_height][my_width - 1] * my_args.filter[1][0] +
-                                                                my_image_before[my_height - 1][my_width - 1] * my_args.filter[0][0]);
+                                                                my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
+                                                                my_image_before[my_height_decr_1][my_width_incr_1] * my_args.filter[0][2] +
+                                                                my_image_before[my_height][my_width_incr_1] * my_args.filter[1][2] +
+                                                                my_image_before[my_height_incr_1][my_width_incr_1] * my_args.filter[2][2] +
+                                                                my_image_before[my_height_incr_1][my_width] * my_args.filter[2][1] +
+                                                                my_image_before[my_height_incr_1][my_width_decr_1] * my_args.filter[2][0] +
+                                                                my_image_before[my_height][my_width_decr_1] * my_args.filter[1][0] +
+                                                                my_image_before[my_height_decr_1][my_width_decr_1] * my_args.filter[0][0]);
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][my_width] < 0)
                             my_image_after[my_height][my_width] = 0;
@@ -1373,14 +1376,14 @@ int main(void){
                     /* Convolute left lower corner */
                     if(flag_corner_ll == 3){
                         my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
-                                                        my_image_before[my_height - 1][1] * my_args.filter[0][1] +
-                                                        my_image_before[my_height - 1][2] * my_args.filter[0][2] +
+                                                        my_image_before[my_height_decr_1][1] * my_args.filter[0][1] +
+                                                        my_image_before[my_height_decr_1][2] * my_args.filter[0][2] +
                                                         my_image_before[my_height][2] * my_args.filter[1][2] +
-                                                        my_image_before[my_height + 1][2] * my_args.filter[2][2] +
-                                                        my_image_before[my_height + 1][1] * my_args.filter[2][1] +
-                                                        my_image_before[my_height + 1][0] * my_args.filter[2][0] +
+                                                        my_image_before[my_height_incr_1][2] * my_args.filter[2][2] +
+                                                        my_image_before[my_height_incr_1][1] * my_args.filter[2][1] +
+                                                        my_image_before[my_height_incr_1][0] * my_args.filter[2][0] +
                                                         my_image_before[my_height][0] * my_args.filter[1][0] +
-                                                        my_image_before[my_height - 1][0] * my_args.filter[0][0]);
+                                                        my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
             
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][1] < 0)
@@ -1429,14 +1432,14 @@ int main(void){
                     /* Convolute left lower corner */
                     if(flag_corner_ll == 3){
                         my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
-                                                        my_image_before[my_height - 1][1] * my_args.filter[0][1] +
-                                                        my_image_before[my_height - 1][2] * my_args.filter[0][2] +
+                                                        my_image_before[my_height_decr_1][1] * my_args.filter[0][1] +
+                                                        my_image_before[my_height_decr_1][2] * my_args.filter[0][2] +
                                                         my_image_before[my_height][2] * my_args.filter[1][2] +
-                                                        my_image_before[my_height + 1][2] * my_args.filter[2][2] +
-                                                        my_image_before[my_height + 1][1] * my_args.filter[2][1] +
-                                                        my_image_before[my_height + 1][0] * my_args.filter[2][0] +
+                                                        my_image_before[my_height_incr_1][2] * my_args.filter[2][2] +
+                                                        my_image_before[my_height_incr_1][1] * my_args.filter[2][1] +
+                                                        my_image_before[my_height_incr_1][0] * my_args.filter[2][0] +
                                                         my_image_before[my_height][0] * my_args.filter[1][0] +
-                                                        my_image_before[my_height - 1][0] * my_args.filter[0][0]);
+                                                        my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
             
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][1] < 0)
@@ -1452,8 +1455,8 @@ int main(void){
 
             FILE* my_file = fopen(fileName, "w");
 
-            for(i = 0; i < my_height + 2; i++){
-                for(j = 0; j < my_width + 2; j++){
+            for(i = 0; i < my_height_incr_2; i++){
+                for(j = 0; j < my_width_incr_2; j++){
                     fprintf(my_file, "%d\t", my_image_after[i][j]);
                 }
                 fprintf(my_file, "\n");
@@ -1468,12 +1471,12 @@ int main(void){
             tmp_ptr = my_image_before[0];
 
             my_image_before[0] = my_image_after[0];
-            for(i = 1; i < my_height_2; i++)
-                my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+            for(i = 1; i < my_height_incr_2; i++)
+                my_image_before[i] = &(my_image_before[0][i*(my_width_incr_2)]);
 
             my_image_after[0] = tmp_ptr;
-            for(i = 1; i < (my_height_2); i++)
-                my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+            for(i = 1; i < (my_height_incr_2); i++)
+                my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
     } // End if e)
     /* Right column processes - except from first and last process in this column - active neighbours N, S, SW, W, NW */
@@ -1520,9 +1523,9 @@ int main(void){
                 my_image_after[i][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
                                                 my_image_before[i - 1][my_width] * my_args.filter[0][1] +
                                                 my_image_before[i + 1][my_width] * my_args.filter[2][1] +
-                                                my_image_before[i + 1][my_width - 1] * my_args.filter[2][0] +
-                                                my_image_before[i][my_width - 1] * my_args.filter[1][0] +
-                                                my_image_before[i - 1][my_width - 1] * my_args.filter[0][0]);
+                                                my_image_before[i + 1][my_width_decr_1] * my_args.filter[2][0] +
+                                                my_image_before[i][my_width_decr_1] * my_args.filter[1][0] +
+                                                my_image_before[i - 1][my_width_decr_1] * my_args.filter[0][0]);
 
                 /* Truncated unexpected values */
                 if(my_image_after[i][my_width] < 0)
@@ -1567,9 +1570,9 @@ int main(void){
                     my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
                                                     my_image_before[0][my_width] * my_args.filter[0][1] +
                                                     my_image_before[2][my_width] * my_args.filter[2][1] +
-                                                    my_image_before[2][my_width - 1] * my_args.filter[2][0] +
-                                                    my_image_before[1][my_width - 1] * my_args.filter[1][0] +
-                                                    my_image_before[0][my_width - 1] * my_args.filter[0][0]);
+                                                    my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
+                                                    my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
+                                                    my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
                     /* Truncated unexpected values */
                     if(my_image_after[1][my_width] < 0)
                         my_image_after[1][my_width] = 0;
@@ -1602,14 +1605,14 @@ int main(void){
                     /* Last line */
                     for(j = 2; j < my_width; j++){
                         my_image_after[my_height][j] = (int)(my_image_before[my_height][j] * my_args.filter[1][1] +
-                                                        my_image_before[my_height - 1][j] * my_args.filter[0][1] +
-                                                        my_image_before[my_height - 1][j + 1] * my_args.filter[0][2] +
+                                                        my_image_before[my_height_decr_1][j] * my_args.filter[0][1] +
+                                                        my_image_before[my_height_decr_1][j + 1] * my_args.filter[0][2] +
                                                         my_image_before[my_height][j + 1] * my_args.filter[1][2] +
-                                                        my_image_before[my_height + 1][j + 1] * my_args.filter[2][2] +
-                                                        my_image_before[my_height + 1][j] * my_args.filter[2][1] +
-                                                        my_image_before[my_height + 1][j - 1] * my_args.filter[2][0] +
+                                                        my_image_before[my_height_incr_1][j + 1] * my_args.filter[2][2] +
+                                                        my_image_before[my_height_incr_1][j] * my_args.filter[2][1] +
+                                                        my_image_before[my_height_incr_1][j - 1] * my_args.filter[2][0] +
                                                         my_image_before[my_height][j - 1] * my_args.filter[1][0] +
-                                                        my_image_before[my_height - 1][j - 1] * my_args.filter[0][0]);
+                                                        my_image_before[my_height_decr_1][j - 1] * my_args.filter[0][0]);
 
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][j] < 0)
@@ -1620,11 +1623,11 @@ int main(void){
 
                     /* Right lower corner */
                     my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
-                                                            my_image_before[my_height - 1][my_width] * my_args.filter[0][1] +
-                                                            my_image_before[my_height + 1][my_width] * my_args.filter[2][1] +
-                                                            my_image_before[my_height + 1][my_width - 1] * my_args.filter[2][0] +
-                                                            my_image_before[my_height][my_width - 1] * my_args.filter[1][0] +
-                                                            my_image_before[my_height - 1][my_width - 1] * my_args.filter[0][0]);
+                                                            my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
+                                                            my_image_before[my_height_incr_1][my_width] * my_args.filter[2][1] +
+                                                            my_image_before[my_height_incr_1][my_width_decr_1] * my_args.filter[2][0] +
+                                                            my_image_before[my_height][my_width_decr_1] * my_args.filter[1][0] +
+                                                            my_image_before[my_height_decr_1][my_width_decr_1] * my_args.filter[0][0]);
                     /* Truncated unexpected values */
                     if(my_image_after[my_height][my_width] < 0)
                         my_image_after[my_height][my_width] = 0;
@@ -1634,14 +1637,14 @@ int main(void){
                     /* Convolute left lower corner */
                     if(flag_corner_ll == 3){
                         my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
-                                                        my_image_before[my_height - 1][1] * my_args.filter[0][1] +
-                                                        my_image_before[my_height - 1][2] * my_args.filter[0][2] +
+                                                        my_image_before[my_height_decr_1][1] * my_args.filter[0][1] +
+                                                        my_image_before[my_height_decr_1][2] * my_args.filter[0][2] +
                                                         my_image_before[my_height][2] * my_args.filter[1][2] +
-                                                        my_image_before[my_height + 1][2] * my_args.filter[2][2] +
-                                                        my_image_before[my_height + 1][1] * my_args.filter[2][1] +
-                                                        my_image_before[my_height + 1][0] * my_args.filter[2][0] +
+                                                        my_image_before[my_height_incr_1][2] * my_args.filter[2][2] +
+                                                        my_image_before[my_height_incr_1][1] * my_args.filter[2][1] +
+                                                        my_image_before[my_height_incr_1][0] * my_args.filter[2][0] +
                                                         my_image_before[my_height][0] * my_args.filter[1][0] +
-                                                        my_image_before[my_height - 1][0] * my_args.filter[0][0]);
+                                                        my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
             
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][1] < 0)
@@ -1657,14 +1660,14 @@ int main(void){
                     /* Convolute left lower corner */
                     if(flag_corner_ll == 3){
                         my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
-                                                        my_image_before[my_height - 1][1] * my_args.filter[0][1] +
-                                                        my_image_before[my_height - 1][2] * my_args.filter[0][2] +
+                                                        my_image_before[my_height_decr_1][1] * my_args.filter[0][1] +
+                                                        my_image_before[my_height_decr_1][2] * my_args.filter[0][2] +
                                                         my_image_before[my_height][2] * my_args.filter[1][2] +
-                                                        my_image_before[my_height + 1][2] * my_args.filter[2][2] +
-                                                        my_image_before[my_height + 1][1] * my_args.filter[2][1] +
-                                                        my_image_before[my_height + 1][0] * my_args.filter[2][0] +
+                                                        my_image_before[my_height_incr_1][2] * my_args.filter[2][2] +
+                                                        my_image_before[my_height_incr_1][1] * my_args.filter[2][1] +
+                                                        my_image_before[my_height_incr_1][0] * my_args.filter[2][0] +
                                                         my_image_before[my_height][0] * my_args.filter[1][0] +
-                                                        my_image_before[my_height - 1][0] * my_args.filter[0][0]);
+                                                        my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
             
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][1] < 0)
@@ -1700,14 +1703,14 @@ int main(void){
                     /* Convolute left lower corner */
                     if(flag_corner_ll == 3){
                         my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
-                                                        my_image_before[my_height - 1][1] * my_args.filter[0][1] +
-                                                        my_image_before[my_height - 1][2] * my_args.filter[0][2] +
+                                                        my_image_before[my_height_decr_1][1] * my_args.filter[0][1] +
+                                                        my_image_before[my_height_decr_1][2] * my_args.filter[0][2] +
                                                         my_image_before[my_height][2] * my_args.filter[1][2] +
-                                                        my_image_before[my_height + 1][2] * my_args.filter[2][2] +
-                                                        my_image_before[my_height + 1][1] * my_args.filter[2][1] +
-                                                        my_image_before[my_height + 1][0] * my_args.filter[2][0] +
+                                                        my_image_before[my_height_incr_1][2] * my_args.filter[2][2] +
+                                                        my_image_before[my_height_incr_1][1] * my_args.filter[2][1] +
+                                                        my_image_before[my_height_incr_1][0] * my_args.filter[2][0] +
                                                         my_image_before[my_height][0] * my_args.filter[1][0] +
-                                                        my_image_before[my_height - 1][0] * my_args.filter[0][0]);
+                                                        my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
             
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][1] < 0)
@@ -1765,8 +1768,8 @@ int main(void){
 
             FILE* my_file = fopen(fileName, "w");
 
-            for(i = 0; i < my_height + 2; i++){
-                for(j = 0; j < my_width + 2; j++){
+            for(i = 0; i < my_height_incr_2; i++){
+                for(j = 0; j < my_width_incr_2; j++){
                     fprintf(my_file, "%d\t", my_image_after[i][j]);
                 }
                 fprintf(my_file, "\n");
@@ -1781,12 +1784,12 @@ int main(void){
             tmp_ptr = my_image_before[0];
 
             my_image_before[0] = my_image_after[0];
-            for(i = 1; i < my_height_2; i++)
-                my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+            for(i = 1; i < my_height_incr_2; i++)
+                my_image_before[i] = &(my_image_before[0][i*(my_width_incr_2)]);
 
             my_image_after[0] = tmp_ptr;
-            for(i = 1; i < my_height_2; i++)
-                my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+            for(i = 1; i < my_height_incr_2; i++)
+                my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
     } // End if f)
     /* Last line processes - except from first and last process in this line - active neighbours N, NE, E, W, NW */
@@ -1832,11 +1835,11 @@ int main(void){
             /* Last line - except from left and right lower corners */
             for(j = 2; j < my_width; j++){
                 my_image_after[my_height][j] = (int)(my_image_before[my_height][j] * my_args.filter[1][1] +
-                                                my_image_before[my_height - 1][j] * my_args.filter[0][1] +
-                                                my_image_before[my_height - 1][j + 1] * my_args.filter[0][2] +
+                                                my_image_before[my_height_decr_1][j] * my_args.filter[0][1] +
+                                                my_image_before[my_height_decr_1][j + 1] * my_args.filter[0][2] +
                                                 my_image_before[my_height][j + 1] * my_args.filter[1][2] +
                                                 my_image_before[my_height][j - 1] * my_args.filter[2][0] +
-                                                my_image_before[my_height - 1][j - 1] * my_args.filter[0][0]);
+                                                my_image_before[my_height_decr_1][j - 1] * my_args.filter[0][0]);
 
                 /* Truncated unexpected values */
                 if(my_image_after[my_height][j] < 0)
@@ -1901,13 +1904,13 @@ int main(void){
                     if(flag_corner_ur == 3){
                         my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
                                                         my_image_before[0][my_width] * my_args.filter[0][1] +
-                                                        my_image_before[0][my_width + 1] * my_args.filter[0][2] +
-                                                        my_image_before[1][my_width + 1] * my_args.filter[1][2] +
-                                                        my_image_before[2][my_width + 1] * my_args.filter[2][2] +
+                                                        my_image_before[0][my_width_incr_1] * my_args.filter[0][2] +
+                                                        my_image_before[1][my_width_incr_1] * my_args.filter[1][2] +
+                                                        my_image_before[2][my_width_incr_1] * my_args.filter[2][2] +
                                                         my_image_before[2][my_width] * my_args.filter[2][1] +
-                                                        my_image_before[2][my_width - 1] * my_args.filter[2][0] +
-                                                        my_image_before[1][my_width - 1] * my_args.filter[1][0] +
-                                                        my_image_before[0][my_width - 1] * my_args.filter[0][0]);
+                                                        my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
+                                                        my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
+                                                        my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
             
                         /* Truncated unexpected values */
                         if(my_image_after[1][my_width] < 0)
@@ -1924,13 +1927,13 @@ int main(void){
                     if(flag_corner_ur == 3){
                         my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
                                                         my_image_before[0][my_width] * my_args.filter[0][1] +
-                                                        my_image_before[0][my_width + 1] * my_args.filter[0][2] +
-                                                        my_image_before[1][my_width + 1] * my_args.filter[1][2] +
-                                                        my_image_before[2][my_width + 1] * my_args.filter[2][2] +
+                                                        my_image_before[0][my_width_incr_1] * my_args.filter[0][2] +
+                                                        my_image_before[1][my_width_incr_1] * my_args.filter[1][2] +
+                                                        my_image_before[2][my_width_incr_1] * my_args.filter[2][2] +
                                                         my_image_before[2][my_width] * my_args.filter[2][1] +
-                                                        my_image_before[2][my_width - 1] * my_args.filter[2][0] +
-                                                        my_image_before[1][my_width - 1] * my_args.filter[1][0] +
-                                                        my_image_before[0][my_width - 1] * my_args.filter[0][0]);
+                                                        my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
+                                                        my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
+                                                        my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
             
                         /* Truncated unexpected values */
                         if(my_image_after[1][my_width] < 0)
@@ -1947,13 +1950,13 @@ int main(void){
                     for(i = 2; i < my_height; i++){
                         my_image_after[i][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
                                                         my_image_before[i - 1][my_width] * my_args.filter[0][1] +
-                                                        my_image_before[i - 1][my_width + 1] * my_args.filter[0][2] +
-                                                        my_image_before[i][my_width + 1] * my_args.filter[1][2] +
-                                                        my_image_before[i + 1][my_width + 1] * my_args.filter[2][2] +
+                                                        my_image_before[i - 1][my_width_incr_1] * my_args.filter[0][2] +
+                                                        my_image_before[i][my_width_incr_1] * my_args.filter[1][2] +
+                                                        my_image_before[i + 1][my_width_incr_1] * my_args.filter[2][2] +
                                                         my_image_before[i + 1][my_width] * my_args.filter[2][1] +
-                                                        my_image_before[i + 1][my_width - 1] * my_args.filter[2][0] +
-                                                        my_image_before[i][my_width - 1] * my_args.filter[1][0] +
-                                                        my_image_before[i - 1][my_width - 1] * my_args.filter[0][0]);
+                                                        my_image_before[i + 1][my_width_decr_1] * my_args.filter[2][0] +
+                                                        my_image_before[i][my_width_decr_1] * my_args.filter[1][0] +
+                                                        my_image_before[i - 1][my_width_decr_1] * my_args.filter[0][0]);
 
                         /* Truncated unexpected values */
                         if(my_image_after[i][my_width] < 0)
@@ -1964,11 +1967,11 @@ int main(void){
 
                     /* Right lower corner */
                     my_image_after[my_height][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
-                                                        my_image_before[my_height - 1][my_width] * my_args.filter[0][1] +
-                                                        my_image_before[my_height - 1][my_width + 1] * my_args.filter[0][2] +
-                                                        my_image_before[my_height][my_width + 1] * my_args.filter[1][2] +
-                                                        my_image_before[my_height][my_width - 1] * my_args.filter[1][0] +
-                                                        my_image_before[my_height - 1][my_width - 1] * my_args.filter[0][0]);
+                                                        my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
+                                                        my_image_before[my_height_decr_1][my_width_incr_1] * my_args.filter[0][2] +
+                                                        my_image_before[my_height][my_width_incr_1] * my_args.filter[1][2] +
+                                                        my_image_before[my_height][my_width_decr_1] * my_args.filter[1][0] +
+                                                        my_image_before[my_height_decr_1][my_width_decr_1] * my_args.filter[0][0]);
                     
                     /* Truncated unexpected values */
                     if(my_image_after[my_height][my_width] < 0)
@@ -1980,13 +1983,13 @@ int main(void){
                     if(flag_corner_ur == 3){
                         my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
                                                         my_image_before[0][my_width] * my_args.filter[0][1] +
-                                                        my_image_before[0][my_width + 1] * my_args.filter[0][2] +
-                                                        my_image_before[1][my_width + 1] * my_args.filter[1][2] +
-                                                        my_image_before[2][my_width + 1] * my_args.filter[2][2] +
+                                                        my_image_before[0][my_width_incr_1] * my_args.filter[0][2] +
+                                                        my_image_before[1][my_width_incr_1] * my_args.filter[1][2] +
+                                                        my_image_before[2][my_width_incr_1] * my_args.filter[2][2] +
                                                         my_image_before[2][my_width] * my_args.filter[2][1] +
-                                                        my_image_before[2][my_width - 1] * my_args.filter[2][0] +
-                                                        my_image_before[1][my_width - 1] * my_args.filter[1][0] +
-                                                        my_image_before[0][my_width - 1] * my_args.filter[0][0]);
+                                                        my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
+                                                        my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
+                                                        my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
             
                         /* Truncated unexpected values */
                         if(my_image_after[1][my_width] < 0)
@@ -2020,11 +2023,11 @@ int main(void){
 
                     /* Left lower corner */
                     my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
-                                                    my_image_before[my_height - 1][1] * my_args.filter[0][1] +
-                                                    my_image_before[my_height - 1][2] * my_args.filter[0][2] +
+                                                    my_image_before[my_height_decr_1][1] * my_args.filter[0][1] +
+                                                    my_image_before[my_height_decr_1][2] * my_args.filter[0][2] +
                                                     my_image_before[my_height][2] * my_args.filter[1][2] +
                                                     my_image_before[my_height][0] * my_args.filter[1][0] +
-                                                    my_image_before[my_height - 1][0] * my_args.filter[0][0]);
+                                                    my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
                     
                     /* Truncated unexpected values */
                     if(my_image_after[my_height][1] < 0)
@@ -2081,8 +2084,8 @@ int main(void){
 
             FILE* my_file = fopen(fileName, "w");
 
-            for(i = 0; i < my_height + 2; i++){
-                for(j = 0; j < my_width + 2; j++){
+            for(i = 0; i < my_height_incr_2; i++){
+                for(j = 0; j < my_width_incr_2; j++){
                     fprintf(my_file, "%d\t", my_image_after[i][j]);
                 }
                 fprintf(my_file, "\n");
@@ -2097,12 +2100,12 @@ int main(void){
             tmp_ptr = my_image_before[0];
 
             my_image_before[0] = my_image_after[0];
-            for(i = 1; i < my_height_2; i++)
-                my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+            for(i = 1; i < my_height_incr_2; i++)
+                my_image_before[i] = &(my_image_before[0][i*(my_width_incr_2)]);
 
             my_image_after[0] = tmp_ptr;
-            for(i = 1; i < (my_height_2); i++)
-                my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+            for(i = 1; i < (my_height_incr_2); i++)
+                my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
     } // End if g)
     /* Left column processes - except from first and last process in this column - active neighbours N, NE, E, SE, S */
@@ -2211,13 +2214,13 @@ int main(void){
                     if(flag_corner_ur == 3){
                         my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
                                                         my_image_before[0][my_width] * my_args.filter[0][1] +
-                                                        my_image_before[0][my_width + 1] * my_args.filter[0][2] +
-                                                        my_image_before[1][my_width + 1] * my_args.filter[1][2] +
-                                                        my_image_before[2][my_width + 1] * my_args.filter[2][2] +
+                                                        my_image_before[0][my_width_incr_1] * my_args.filter[0][2] +
+                                                        my_image_before[1][my_width_incr_1] * my_args.filter[1][2] +
+                                                        my_image_before[2][my_width_incr_1] * my_args.filter[2][2] +
                                                         my_image_before[2][my_width] * my_args.filter[2][1] +
-                                                        my_image_before[2][my_width - 1] * my_args.filter[2][0] +
-                                                        my_image_before[1][my_width - 1] * my_args.filter[1][0] +
-                                                        my_image_before[0][my_width - 1] * my_args.filter[0][0]);
+                                                        my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
+                                                        my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
+                                                        my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
             
                         /* Truncated unexpected values */
                         if(my_image_after[1][my_width] < 0)
@@ -2234,13 +2237,13 @@ int main(void){
                     if(flag_corner_ur == 3){
                         my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
                                                         my_image_before[0][my_width] * my_args.filter[0][1] +
-                                                        my_image_before[0][my_width + 1] * my_args.filter[0][2] +
-                                                        my_image_before[1][my_width + 1] * my_args.filter[1][2] +
-                                                        my_image_before[2][my_width + 1] * my_args.filter[2][2] +
+                                                        my_image_before[0][my_width_incr_1] * my_args.filter[0][2] +
+                                                        my_image_before[1][my_width_incr_1] * my_args.filter[1][2] +
+                                                        my_image_before[2][my_width_incr_1] * my_args.filter[2][2] +
                                                         my_image_before[2][my_width] * my_args.filter[2][1] +
-                                                        my_image_before[2][my_width - 1] * my_args.filter[2][0] +
-                                                        my_image_before[1][my_width - 1] * my_args.filter[1][0] +
-                                                        my_image_before[0][my_width - 1] * my_args.filter[0][0]);
+                                                        my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
+                                                        my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
+                                                        my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
             
                         /* Truncated unexpected values */
                         if(my_image_after[1][my_width] < 0)
@@ -2258,13 +2261,13 @@ int main(void){
                     for(i = 2; i < my_height; i++){
                         my_image_after[i][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
                                                         my_image_before[i - 1][my_width] * my_args.filter[0][1] +
-                                                        my_image_before[i - 1][my_width + 1] * my_args.filter[0][2] +
-                                                        my_image_before[i][my_width + 1] * my_args.filter[1][2] +
-                                                        my_image_before[i + 1][my_width + 1] * my_args.filter[2][2] +
+                                                        my_image_before[i - 1][my_width_incr_1] * my_args.filter[0][2] +
+                                                        my_image_before[i][my_width_incr_1] * my_args.filter[1][2] +
+                                                        my_image_before[i + 1][my_width_incr_1] * my_args.filter[2][2] +
                                                         my_image_before[i + 1][my_width] * my_args.filter[2][1] +
-                                                        my_image_before[i + 1][my_width - 1] * my_args.filter[2][0] +
-                                                        my_image_before[i][my_width - 1] * my_args.filter[1][0] +
-                                                        my_image_before[i - 1][my_width - 1] * my_args.filter[0][0]);
+                                                        my_image_before[i + 1][my_width_decr_1] * my_args.filter[2][0] +
+                                                        my_image_before[i][my_width_decr_1] * my_args.filter[1][0] +
+                                                        my_image_before[i - 1][my_width_decr_1] * my_args.filter[0][0]);
 
                         /* Truncated unexpected values */
                         if(my_image_after[i][my_width] < 0)
@@ -2277,13 +2280,13 @@ int main(void){
                     if(flag_corner_ur == 3){
                         my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
                                                         my_image_before[0][my_width] * my_args.filter[0][1] +
-                                                        my_image_before[0][my_width + 1] * my_args.filter[0][2] +
-                                                        my_image_before[1][my_width + 1] * my_args.filter[1][2] +
-                                                        my_image_before[2][my_width + 1] * my_args.filter[2][2] +
+                                                        my_image_before[0][my_width_incr_1] * my_args.filter[0][2] +
+                                                        my_image_before[1][my_width_incr_1] * my_args.filter[1][2] +
+                                                        my_image_before[2][my_width_incr_1] * my_args.filter[2][2] +
                                                         my_image_before[2][my_width] * my_args.filter[2][1] +
-                                                        my_image_before[2][my_width - 1] * my_args.filter[2][0] +
-                                                        my_image_before[1][my_width - 1] * my_args.filter[1][0] +
-                                                        my_image_before[0][my_width - 1] * my_args.filter[0][0]);
+                                                        my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
+                                                        my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
+                                                        my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
             
                         /* Truncated unexpected values */
                         if(my_image_after[1][my_width] < 0)
@@ -2295,14 +2298,14 @@ int main(void){
                     /* Convolute right lower corner */
                     if(flag_corner_lr == 3){
                         my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
-                                                                my_image_before[my_height - 1][my_width] * my_args.filter[0][1] +
-                                                                my_image_before[my_height - 1][my_width + 1] * my_args.filter[0][2] +
-                                                                my_image_before[my_height][my_width + 1] * my_args.filter[1][2] +
-                                                                my_image_before[my_height + 1][my_width + 1] * my_args.filter[2][2] +
-                                                                my_image_before[my_height + 1][my_width] * my_args.filter[2][1] +
-                                                                my_image_before[my_height + 1][my_width - 1] * my_args.filter[2][0] +
-                                                                my_image_before[my_height][my_width - 1] * my_args.filter[1][0] +
-                                                                my_image_before[my_height - 1][my_width - 1] * my_args.filter[0][0]);
+                                                                my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
+                                                                my_image_before[my_height_decr_1][my_width_incr_1] * my_args.filter[0][2] +
+                                                                my_image_before[my_height][my_width_incr_1] * my_args.filter[1][2] +
+                                                                my_image_before[my_height_incr_1][my_width_incr_1] * my_args.filter[2][2] +
+                                                                my_image_before[my_height_incr_1][my_width] * my_args.filter[2][1] +
+                                                                my_image_before[my_height_incr_1][my_width_decr_1] * my_args.filter[2][0] +
+                                                                my_image_before[my_height][my_width_decr_1] * my_args.filter[1][0] +
+                                                                my_image_before[my_height_decr_1][my_width_decr_1] * my_args.filter[0][0]);
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][my_width] < 0)
                             my_image_after[my_height][my_width] = 0;
@@ -2317,14 +2320,14 @@ int main(void){
                     /* Convolute right lower corner */
                     if(flag_corner_lr == 3){
                         my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
-                                                                my_image_before[my_height - 1][my_width] * my_args.filter[0][1] +
-                                                                my_image_before[my_height - 1][my_width + 1] * my_args.filter[0][2] +
-                                                                my_image_before[my_height][my_width + 1] * my_args.filter[1][2] +
-                                                                my_image_before[my_height + 1][my_width + 1] * my_args.filter[2][2] +
-                                                                my_image_before[my_height + 1][my_width] * my_args.filter[2][1] +
-                                                                my_image_before[my_height + 1][my_width - 1] * my_args.filter[2][0] +
-                                                                my_image_before[my_height][my_width - 1] * my_args.filter[1][0] +
-                                                                my_image_before[my_height - 1][my_width - 1] * my_args.filter[0][0]);
+                                                                my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
+                                                                my_image_before[my_height_decr_1][my_width_incr_1] * my_args.filter[0][2] +
+                                                                my_image_before[my_height][my_width_incr_1] * my_args.filter[1][2] +
+                                                                my_image_before[my_height_incr_1][my_width_incr_1] * my_args.filter[2][2] +
+                                                                my_image_before[my_height_incr_1][my_width] * my_args.filter[2][1] +
+                                                                my_image_before[my_height_incr_1][my_width_decr_1] * my_args.filter[2][0] +
+                                                                my_image_before[my_height][my_width_decr_1] * my_args.filter[1][0] +
+                                                                my_image_before[my_height_decr_1][my_width_decr_1] * my_args.filter[0][0]);
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][my_width] < 0)
                             my_image_after[my_height][my_width] = 0;
@@ -2339,14 +2342,14 @@ int main(void){
                     /* Last line */
                     for(j = 2; j < my_width; j++){
                         my_image_after[my_height][j] = (int)(my_image_before[my_height][j] * my_args.filter[1][1] +
-                                                        my_image_before[my_height - 1][j] * my_args.filter[0][1] +
-                                                        my_image_before[my_height - 1][j + 1] * my_args.filter[0][2] +
+                                                        my_image_before[my_height_decr_1][j] * my_args.filter[0][1] +
+                                                        my_image_before[my_height_decr_1][j + 1] * my_args.filter[0][2] +
                                                         my_image_before[my_height][j + 1] * my_args.filter[1][2] +
-                                                        my_image_before[my_height + 1][j + 1] * my_args.filter[2][2] +
-                                                        my_image_before[my_height + 1][j] * my_args.filter[2][1] +
-                                                        my_image_before[my_height + 1][j - 1] * my_args.filter[2][0] +
+                                                        my_image_before[my_height_incr_1][j + 1] * my_args.filter[2][2] +
+                                                        my_image_before[my_height_incr_1][j] * my_args.filter[2][1] +
+                                                        my_image_before[my_height_incr_1][j - 1] * my_args.filter[2][0] +
                                                         my_image_before[my_height][j - 1] * my_args.filter[1][0] +
-                                                        my_image_before[my_height - 1][j - 1] * my_args.filter[0][0]);
+                                                        my_image_before[my_height_decr_1][j - 1] * my_args.filter[0][0]);
 
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][j] < 0)
@@ -2357,11 +2360,11 @@ int main(void){
 
                     /* Left lower corner */
                     my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
-                                                    my_image_before[my_height - 1][1] * my_args.filter[0][1] +
-                                                    my_image_before[my_height - 1][2] * my_args.filter[0][2] +
+                                                    my_image_before[my_height_decr_1][1] * my_args.filter[0][1] +
+                                                    my_image_before[my_height_decr_1][2] * my_args.filter[0][2] +
                                                     my_image_before[my_height][2] * my_args.filter[1][2] +
-                                                    my_image_before[my_height + 1][2] * my_args.filter[2][2] +
-                                                    my_image_before[my_height + 1][1] * my_args.filter[2][1]);
+                                                    my_image_before[my_height_incr_1][2] * my_args.filter[2][2] +
+                                                    my_image_before[my_height_incr_1][1] * my_args.filter[2][1]);
 
                     /* Truncated unexpected values */
                     if(my_image_after[my_height][1] < 0)
@@ -2372,14 +2375,14 @@ int main(void){
                     /* Convolute right lower corner */
                     if(flag_corner_lr == 3){
                         my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
-                                                                my_image_before[my_height - 1][my_width] * my_args.filter[0][1] +
-                                                                my_image_before[my_height - 1][my_width + 1] * my_args.filter[0][2] +
-                                                                my_image_before[my_height][my_width + 1] * my_args.filter[1][2] +
-                                                                my_image_before[my_height + 1][my_width + 1] * my_args.filter[2][2] +
-                                                                my_image_before[my_height + 1][my_width] * my_args.filter[2][1] +
-                                                                my_image_before[my_height + 1][my_width - 1] * my_args.filter[2][0] +
-                                                                my_image_before[my_height][my_width - 1] * my_args.filter[1][0] +
-                                                                my_image_before[my_height - 1][my_width - 1] * my_args.filter[0][0]);
+                                                                my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
+                                                                my_image_before[my_height_decr_1][my_width_incr_1] * my_args.filter[0][2] +
+                                                                my_image_before[my_height][my_width_incr_1] * my_args.filter[1][2] +
+                                                                my_image_before[my_height_incr_1][my_width_incr_1] * my_args.filter[2][2] +
+                                                                my_image_before[my_height_incr_1][my_width] * my_args.filter[2][1] +
+                                                                my_image_before[my_height_incr_1][my_width_decr_1] * my_args.filter[2][0] +
+                                                                my_image_before[my_height][my_width_decr_1] * my_args.filter[1][0] +
+                                                                my_image_before[my_height_decr_1][my_width_decr_1] * my_args.filter[0][0]);
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][my_width] < 0)
                             my_image_after[my_height][my_width] = 0;
@@ -2394,8 +2397,8 @@ int main(void){
 
             FILE* my_file = fopen(fileName, "w");
 
-            for(i = 0; i < my_height + 2; i++){
-                for(j = 0; j < my_width + 2; j++){
+            for(i = 0; i < my_height_incr_2; i++){
+                for(j = 0; j < my_width_incr_2; j++){
                     fprintf(my_file, "%d\t", my_image_after[i][j]);
                 }
                 fprintf(my_file, "\n");
@@ -2410,12 +2413,12 @@ int main(void){
             tmp_ptr = my_image_before[0];
 
             my_image_before[0] = my_image_after[0];
-            for(i = 1; i < my_height_2; i++)
-                my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+            for(i = 1; i < my_height_incr_2; i++)
+                my_image_before[i] = &(my_image_before[0][i*(my_width_incr_2)]);
 
             my_image_after[0] = tmp_ptr;
-            for(i = 1; i < (my_height_2); i++)
-                my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+            for(i = 1; i < (my_height_incr_2); i++)
+                my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
     } // End if h)
     /* Inner processes - all neighbours are active */
@@ -2510,13 +2513,13 @@ int main(void){
                     if(flag_corner_ur == 3){
                         my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
                                                         my_image_before[0][my_width] * my_args.filter[0][1] +
-                                                        my_image_before[0][my_width + 1] * my_args.filter[0][2] +
-                                                        my_image_before[1][my_width + 1] * my_args.filter[1][2] +
-                                                        my_image_before[2][my_width + 1] * my_args.filter[2][2] +
+                                                        my_image_before[0][my_width_incr_1] * my_args.filter[0][2] +
+                                                        my_image_before[1][my_width_incr_1] * my_args.filter[1][2] +
+                                                        my_image_before[2][my_width_incr_1] * my_args.filter[2][2] +
                                                         my_image_before[2][my_width] * my_args.filter[2][1] +
-                                                        my_image_before[2][my_width - 1] * my_args.filter[2][0] +
-                                                        my_image_before[1][my_width - 1] * my_args.filter[1][0] +
-                                                        my_image_before[0][my_width - 1] * my_args.filter[0][0]);
+                                                        my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
+                                                        my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
+                                                        my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
             
                         /* Truncated unexpected values */
                         if(my_image_after[1][my_width] < 0)
@@ -2533,13 +2536,13 @@ int main(void){
                     if(flag_corner_ur == 3){
                         my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
                                                         my_image_before[0][my_width] * my_args.filter[0][1] +
-                                                        my_image_before[0][my_width + 1] * my_args.filter[0][2] +
-                                                        my_image_before[1][my_width + 1] * my_args.filter[1][2] +
-                                                        my_image_before[2][my_width + 1] * my_args.filter[2][2] +
+                                                        my_image_before[0][my_width_incr_1] * my_args.filter[0][2] +
+                                                        my_image_before[1][my_width_incr_1] * my_args.filter[1][2] +
+                                                        my_image_before[2][my_width_incr_1] * my_args.filter[2][2] +
                                                         my_image_before[2][my_width] * my_args.filter[2][1] +
-                                                        my_image_before[2][my_width - 1] * my_args.filter[2][0] +
-                                                        my_image_before[1][my_width - 1] * my_args.filter[1][0] +
-                                                        my_image_before[0][my_width - 1] * my_args.filter[0][0]);
+                                                        my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
+                                                        my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
+                                                        my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
             
                         /* Truncated unexpected values */
                         if(my_image_after[1][my_width] < 0)
@@ -2557,13 +2560,13 @@ int main(void){
                     for(i = 2; i < my_height; i++){
                         my_image_after[i][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
                                                         my_image_before[i - 1][my_width] * my_args.filter[0][1] +
-                                                        my_image_before[i - 1][my_width + 1] * my_args.filter[0][2] +
-                                                        my_image_before[i][my_width + 1] * my_args.filter[1][2] +
-                                                        my_image_before[i + 1][my_width + 1] * my_args.filter[2][2] +
+                                                        my_image_before[i - 1][my_width_incr_1] * my_args.filter[0][2] +
+                                                        my_image_before[i][my_width_incr_1] * my_args.filter[1][2] +
+                                                        my_image_before[i + 1][my_width_incr_1] * my_args.filter[2][2] +
                                                         my_image_before[i + 1][my_width] * my_args.filter[2][1] +
-                                                        my_image_before[i + 1][my_width - 1] * my_args.filter[2][0] +
-                                                        my_image_before[i][my_width - 1] * my_args.filter[1][0] +
-                                                        my_image_before[i - 1][my_width - 1] * my_args.filter[0][0]);
+                                                        my_image_before[i + 1][my_width_decr_1] * my_args.filter[2][0] +
+                                                        my_image_before[i][my_width_decr_1] * my_args.filter[1][0] +
+                                                        my_image_before[i - 1][my_width_decr_1] * my_args.filter[0][0]);
 
                         /* Truncated unexpected values */
                         if(my_image_after[i][my_width] < 0)
@@ -2576,13 +2579,13 @@ int main(void){
                     if(flag_corner_ur == 3){
                         my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
                                                         my_image_before[0][my_width] * my_args.filter[0][1] +
-                                                        my_image_before[0][my_width + 1] * my_args.filter[0][2] +
-                                                        my_image_before[1][my_width + 1] * my_args.filter[1][2] +
-                                                        my_image_before[2][my_width + 1] * my_args.filter[2][2] +
+                                                        my_image_before[0][my_width_incr_1] * my_args.filter[0][2] +
+                                                        my_image_before[1][my_width_incr_1] * my_args.filter[1][2] +
+                                                        my_image_before[2][my_width_incr_1] * my_args.filter[2][2] +
                                                         my_image_before[2][my_width] * my_args.filter[2][1] +
-                                                        my_image_before[2][my_width - 1] * my_args.filter[2][0] +
-                                                        my_image_before[1][my_width - 1] * my_args.filter[1][0] +
-                                                        my_image_before[0][my_width - 1] * my_args.filter[0][0]);
+                                                        my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
+                                                        my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
+                                                        my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
             
                         /* Truncated unexpected values */
                         if(my_image_after[1][my_width] < 0)
@@ -2594,14 +2597,14 @@ int main(void){
                     /* Convolute right lower corner */
                     if(flag_corner_lr == 3){
                         my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
-                                                                my_image_before[my_height - 1][my_width] * my_args.filter[0][1] +
-                                                                my_image_before[my_height - 1][my_width + 1] * my_args.filter[0][2] +
-                                                                my_image_before[my_height][my_width + 1] * my_args.filter[1][2] +
-                                                                my_image_before[my_height + 1][my_width + 1] * my_args.filter[2][2] +
-                                                                my_image_before[my_height + 1][my_width] * my_args.filter[2][1] +
-                                                                my_image_before[my_height + 1][my_width - 1] * my_args.filter[2][0] +
-                                                                my_image_before[my_height][my_width - 1] * my_args.filter[1][0] +
-                                                                my_image_before[my_height - 1][my_width - 1] * my_args.filter[0][0]);
+                                                                my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
+                                                                my_image_before[my_height_decr_1][my_width_incr_1] * my_args.filter[0][2] +
+                                                                my_image_before[my_height][my_width_incr_1] * my_args.filter[1][2] +
+                                                                my_image_before[my_height_incr_1][my_width_incr_1] * my_args.filter[2][2] +
+                                                                my_image_before[my_height_incr_1][my_width] * my_args.filter[2][1] +
+                                                                my_image_before[my_height_incr_1][my_width_decr_1] * my_args.filter[2][0] +
+                                                                my_image_before[my_height][my_width_decr_1] * my_args.filter[1][0] +
+                                                                my_image_before[my_height_decr_1][my_width_decr_1] * my_args.filter[0][0]);
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][my_width] < 0)
                             my_image_after[my_height][my_width] = 0;
@@ -2615,14 +2618,14 @@ int main(void){
 
                     if(flag_corner_lr == 3){
                         my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
-                                                                my_image_before[my_height - 1][my_width] * my_args.filter[0][1] +
-                                                                my_image_before[my_height - 1][my_width + 1] * my_args.filter[0][2] +
-                                                                my_image_before[my_height][my_width + 1] * my_args.filter[1][2] +
-                                                                my_image_before[my_height + 1][my_width + 1] * my_args.filter[2][2] +
-                                                                my_image_before[my_height + 1][my_width] * my_args.filter[2][1] +
-                                                                my_image_before[my_height + 1][my_width - 1] * my_args.filter[2][0] +
-                                                                my_image_before[my_height][my_width - 1] * my_args.filter[1][0] +
-                                                                my_image_before[my_height - 1][my_width - 1] * my_args.filter[0][0]);
+                                                                my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
+                                                                my_image_before[my_height_decr_1][my_width_incr_1] * my_args.filter[0][2] +
+                                                                my_image_before[my_height][my_width_incr_1] * my_args.filter[1][2] +
+                                                                my_image_before[my_height_incr_1][my_width_incr_1] * my_args.filter[2][2] +
+                                                                my_image_before[my_height_incr_1][my_width] * my_args.filter[2][1] +
+                                                                my_image_before[my_height_incr_1][my_width_decr_1] * my_args.filter[2][0] +
+                                                                my_image_before[my_height][my_width_decr_1] * my_args.filter[1][0] +
+                                                                my_image_before[my_height_decr_1][my_width_decr_1] * my_args.filter[0][0]);
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][my_width] < 0)
                             my_image_after[my_height][my_width] = 0;
@@ -2638,14 +2641,14 @@ int main(void){
                     /* Last line */
                     for(j = 2; j < my_width; j++){
                         my_image_after[my_height][j] = (int)(my_image_before[my_height][j] * my_args.filter[1][1] +
-                                                        my_image_before[my_height - 1][j] * my_args.filter[0][1] +
-                                                        my_image_before[my_height - 1][j + 1] * my_args.filter[0][2] +
+                                                        my_image_before[my_height_decr_1][j] * my_args.filter[0][1] +
+                                                        my_image_before[my_height_decr_1][j + 1] * my_args.filter[0][2] +
                                                         my_image_before[my_height][j + 1] * my_args.filter[1][2] +
-                                                        my_image_before[my_height + 1][j + 1] * my_args.filter[2][2] +
-                                                        my_image_before[my_height + 1][j] * my_args.filter[2][1] +
-                                                        my_image_before[my_height + 1][j - 1] * my_args.filter[2][0] +
+                                                        my_image_before[my_height_incr_1][j + 1] * my_args.filter[2][2] +
+                                                        my_image_before[my_height_incr_1][j] * my_args.filter[2][1] +
+                                                        my_image_before[my_height_incr_1][j - 1] * my_args.filter[2][0] +
                                                         my_image_before[my_height][j - 1] * my_args.filter[1][0] +
-                                                        my_image_before[my_height - 1][j - 1] * my_args.filter[0][0]);
+                                                        my_image_before[my_height_decr_1][j - 1] * my_args.filter[0][0]);
 
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][j] < 0)
@@ -2657,14 +2660,14 @@ int main(void){
                     /* Convolute left lower corner */
                     if(flag_corner_ll == 3){
                         my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
-                                                        my_image_before[my_height - 1][1] * my_args.filter[0][1] +
-                                                        my_image_before[my_height - 1][2] * my_args.filter[0][2] +
+                                                        my_image_before[my_height_decr_1][1] * my_args.filter[0][1] +
+                                                        my_image_before[my_height_decr_1][2] * my_args.filter[0][2] +
                                                         my_image_before[my_height][2] * my_args.filter[1][2] +
-                                                        my_image_before[my_height + 1][2] * my_args.filter[2][2] +
-                                                        my_image_before[my_height + 1][1] * my_args.filter[2][1] +
-                                                        my_image_before[my_height + 1][0] * my_args.filter[2][0] +
+                                                        my_image_before[my_height_incr_1][2] * my_args.filter[2][2] +
+                                                        my_image_before[my_height_incr_1][1] * my_args.filter[2][1] +
+                                                        my_image_before[my_height_incr_1][0] * my_args.filter[2][0] +
                                                         my_image_before[my_height][0] * my_args.filter[1][0] +
-                                                        my_image_before[my_height - 1][0] * my_args.filter[0][0]);
+                                                        my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
             
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][1] < 0)
@@ -2675,14 +2678,14 @@ int main(void){
                     /* Convolute right lower corner */
                     if(flag_corner_lr == 3){
                         my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
-                                                                my_image_before[my_height - 1][my_width] * my_args.filter[0][1] +
-                                                                my_image_before[my_height - 1][my_width + 1] * my_args.filter[0][2] +
-                                                                my_image_before[my_height][my_width + 1] * my_args.filter[1][2] +
-                                                                my_image_before[my_height + 1][my_width + 1] * my_args.filter[2][2] +
-                                                                my_image_before[my_height + 1][my_width] * my_args.filter[2][1] +
-                                                                my_image_before[my_height + 1][my_width - 1] * my_args.filter[2][0] +
-                                                                my_image_before[my_height][my_width - 1] * my_args.filter[1][0] +
-                                                                my_image_before[my_height - 1][my_width - 1] * my_args.filter[0][0]);
+                                                                my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
+                                                                my_image_before[my_height_decr_1][my_width_incr_1] * my_args.filter[0][2] +
+                                                                my_image_before[my_height][my_width_incr_1] * my_args.filter[1][2] +
+                                                                my_image_before[my_height_incr_1][my_width_incr_1] * my_args.filter[2][2] +
+                                                                my_image_before[my_height_incr_1][my_width] * my_args.filter[2][1] +
+                                                                my_image_before[my_height_incr_1][my_width_decr_1] * my_args.filter[2][0] +
+                                                                my_image_before[my_height][my_width_decr_1] * my_args.filter[1][0] +
+                                                                my_image_before[my_height_decr_1][my_width_decr_1] * my_args.filter[0][0]);
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][my_width] < 0)
                             my_image_after[my_height][my_width] = 0;
@@ -2697,14 +2700,14 @@ int main(void){
                     /* Convolute left lower corner */
                     if(flag_corner_ll == 3){
                         my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
-                                                        my_image_before[my_height - 1][1] * my_args.filter[0][1] +
-                                                        my_image_before[my_height - 1][2] * my_args.filter[0][2] +
+                                                        my_image_before[my_height_decr_1][1] * my_args.filter[0][1] +
+                                                        my_image_before[my_height_decr_1][2] * my_args.filter[0][2] +
                                                         my_image_before[my_height][2] * my_args.filter[1][2] +
-                                                        my_image_before[my_height + 1][2] * my_args.filter[2][2] +
-                                                        my_image_before[my_height + 1][1] * my_args.filter[2][1] +
-                                                        my_image_before[my_height + 1][0] * my_args.filter[2][0] +
+                                                        my_image_before[my_height_incr_1][2] * my_args.filter[2][2] +
+                                                        my_image_before[my_height_incr_1][1] * my_args.filter[2][1] +
+                                                        my_image_before[my_height_incr_1][0] * my_args.filter[2][0] +
                                                         my_image_before[my_height][0] * my_args.filter[1][0] +
-                                                        my_image_before[my_height - 1][0] * my_args.filter[0][0]);
+                                                        my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
             
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][1] < 0)
@@ -2740,14 +2743,14 @@ int main(void){
                     /* Convolute left lower corner */
                     if(flag_corner_ll == 3){
                         my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
-                                                        my_image_before[my_height - 1][1] * my_args.filter[0][1] +
-                                                        my_image_before[my_height - 1][2] * my_args.filter[0][2] +
+                                                        my_image_before[my_height_decr_1][1] * my_args.filter[0][1] +
+                                                        my_image_before[my_height_decr_1][2] * my_args.filter[0][2] +
                                                         my_image_before[my_height][2] * my_args.filter[1][2] +
-                                                        my_image_before[my_height + 1][2] * my_args.filter[2][2] +
-                                                        my_image_before[my_height + 1][1] * my_args.filter[2][1] +
-                                                        my_image_before[my_height + 1][0] * my_args.filter[2][0] +
+                                                        my_image_before[my_height_incr_1][2] * my_args.filter[2][2] +
+                                                        my_image_before[my_height_incr_1][1] * my_args.filter[2][1] +
+                                                        my_image_before[my_height_incr_1][0] * my_args.filter[2][0] +
                                                         my_image_before[my_height][0] * my_args.filter[1][0] +
-                                                        my_image_before[my_height - 1][0] * my_args.filter[0][0]);
+                                                        my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
             
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][1] < 0)
@@ -2805,8 +2808,8 @@ int main(void){
 
             FILE* my_file = fopen(fileName, "w");
 
-            for(i = 0; i < my_height + 2; i++){
-                for(j = 0; j < my_width + 2; j++){
+            for(i = 0; i < my_height_incr_2; i++){
+                for(j = 0; j < my_width_incr_2; j++){
                     fprintf(my_file, "%d\t", my_image_after[i][j]);
                 }
                 fprintf(my_file, "\n");
@@ -2821,12 +2824,12 @@ int main(void){
             tmp_ptr = my_image_before[0];
 
             my_image_before[0] = my_image_after[0];
-            for(i = 1; i < my_height_2; i++)
-                my_image_before[i] = &(my_image_before[0][i*(my_width_2)]);
+            for(i = 1; i < my_height_incr_2; i++)
+                my_image_before[i] = &(my_image_before[0][i*(my_width_incr_2)]);
 
             my_image_after[0] = tmp_ptr;
-            for(i = 1; i < (my_height_2); i++)
-                my_image_after[i] = &(my_image_after[0][i*(my_width_2)]);
+            for(i = 1; i < (my_height_incr_2); i++)
+                my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
     } // End else i)
 
