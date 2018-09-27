@@ -2815,8 +2815,6 @@ int main(void){
                 } // End if NW 
             } // End for
             
-            fclose(my_file);
-
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 

@@ -547,7 +547,7 @@ int main(void){
             } // End for
             
             /* Check if all processes convergence */
-            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
+            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,my_cartesian_comm);
 
             /* No changes in all images */
             if(print_message == 0 && all_finished == 0){
@@ -776,7 +776,7 @@ int main(void){
             } // End for
             
             /* Check if all processes convergence */
-            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
+            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,my_cartesian_comm);
 
             /* In the next loop perform convolution to the new image  - swapp images */
             tmp_ptr = my_image_before[0];
@@ -1000,7 +1000,7 @@ int main(void){
             } // End for
             
             /* Check if all processes convergence */
-            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
+            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,my_cartesian_comm);
 
             /* In the next loop perform convolution to the new image  - swapp images */
             tmp_ptr = my_image_before[0];
@@ -1224,7 +1224,7 @@ int main(void){
             } // End for
             
             /* Check if all processes convergence */
-            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
+            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,my_cartesian_comm);
 
             /* In the next loop perform convolution to the new image  - swapp images */
             tmp_ptr = my_image_before[0];
@@ -1550,7 +1550,7 @@ int main(void){
             } // End for
             
             /* Check if all processes convergence */
-            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
+            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,my_cartesian_comm);
 
             /* In the next loop perform convolution to the new image  - swapp images */
             tmp_ptr = my_image_before[0];
@@ -1877,7 +1877,7 @@ int main(void){
             } // End for
             
             /* Check if all processes convergence */
-            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
+            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,my_cartesian_comm);
 
             /* In the next loop perform convolution to the new image  - swapp images */
             tmp_ptr = my_image_before[0];
@@ -2208,7 +2208,7 @@ int main(void){
             } // End for
             
             /* Check if all processes convergence */
-            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
+            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,my_cartesian_comm);
 
             /* In the next loop perform convolution to the new image  - swapp images */
             tmp_ptr = my_image_before[0];
@@ -2535,7 +2535,7 @@ int main(void){
             } // End for
             
             /* Check if all processes convergence */
-            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
+            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,my_cartesian_comm);
 
             /* In the next loop perform convolution to the new image  - swapp images */
             tmp_ptr = my_image_before[0];
@@ -2944,8 +2944,6 @@ int main(void){
                 } // End if NW 
             } // End for
             
-            fclose(my_file);
-
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
@@ -2962,7 +2960,7 @@ int main(void){
             } // End for
             
             /* Check if all processes convergence */
-            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
+            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,my_cartesian_comm);
 
             /* In the next loop perform convolution to the new image  - swapp images */
             tmp_ptr = my_image_before[0];
