@@ -33,7 +33,8 @@ Note: Run make file inside folders
 * Dynamic Receiving - MPI_Status, MPI_Waitany, use of MPI_PROC_NULL 
 
 ## Contributing
-* Read a real image from a file using parallel I/O -> The user will enter the image src, the filter and the number of iterations
+* Introduce parallel I/O for reading a real image from a file. <br />
+Note: The user will enter the image src, the filter and the number of iterations
 
 ## Helpful Links: 
 1. http://matlabtricks.com/post-5/3x3-convolution-kernels-with-online-demo
