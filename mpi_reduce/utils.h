@@ -19,7 +19,7 @@
 #define FILTER_SIZE 3 // 3 x 3 -> Must not be changed
 #define FILTER_MAX_VALUE 10 // Max value of filter
 #define FILTER_MIN_VALUE -10
-#define MAX_ITERATIONS 200 
+#define MAX_ITERATIONS 1500 
 #define PROCESSES_LIMIT 100
 
 /* Neighbours - Mapping(nort, east, etc.) */

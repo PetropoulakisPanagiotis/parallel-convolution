@@ -15,6 +15,7 @@
 #include <mpi.h>
 #include <math.h>
 #include <stddef.h>
+#include <string.h>
 
 #include "utils.h"
 
@@ -24,6 +25,7 @@ int main(void){
     Args_type my_args; // Arguments of current process
     int comm_size, my_rank, error;
     int i, j, k, iter, index;
+    int equality_flag, all_finished; // For all reduce
 
     /* Initialize MPI environment - Get number of processes and rank. */
     MPI_Init(NULL, NULL);
@@ -258,13 +260,13 @@ int main(void){
 
     /* Set edges(hallow points, -1 for now, until neighbours send theirs) */
     for(i = 0; i < my_height_incr_2; i++){
-        my_image_before[i][0] = -1;
-        my_image_before[i][my_width_incr_1] = -1;
+        my_image_before[i][0] = 0;
+        my_image_before[i][my_width_incr_1] = 0;
     }
 
     for(j = 0; j < my_width_incr_2; j++){
-        my_image_before[0][j] = -1;
-        my_image_before[my_height_incr_1][j] = -1;
+        my_image_before[0][j] = 0;
+        my_image_before[my_height_incr_1][j] = 0;
     }
 
     /* Allocate an image to save the result */
@@ -333,10 +335,11 @@ int main(void){
     /* ul -> upper left  */
     /* ll -> lower left  */
     /* lr -> lower right */
-
+    
     /* Left upper process - active neighbours E, SE, S */
     if(my_rank == 0){
-
+        int print_message = 0; // Print loop that all images have reach convergence 
+        
         /* Perform convolution */
         for(iter = 0; iter < my_args.iterations; iter++){
 
@@ -516,6 +519,27 @@ int main(void){
             
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
+            
+            equality_flag = 0;
+            
+            /* Check if image after hasn't changed */
+            for(i = 1; i < my_height && (equality_flag == 0); i++){
+                for(j = 1; j < my_width; j++){
+                    if(my_image_before[i][j] != my_image_after[i][j]){
+                        equality_flag = 1;
+                        break;
+                    }
+                } // End for
+            } // End for
+            
+            /* Check if all processes convergence */
+            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
+
+            /* No changes in all images */
+            if(print_message == 0 && all_finished == 0){
+                printf("Image convergence at %d iteration\n",iter);
+                print_message = 1;
+            }
 
             /* In the next loop perform convolution to the new image  - swapp images */
             tmp_ptr = my_image_before[0];
@@ -724,6 +748,21 @@ int main(void){
 
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
+
+            equality_flag = 0;
+            
+            /* Check if image after hasn't changed */
+            for(i = 1; i < my_height && (equality_flag == 0); i++){
+                for(j = 1; j < my_width; j++){
+                    if(my_image_before[i][j] != my_image_after[i][j]){
+                        equality_flag = 1;
+                        break;
+                    }
+                } // End for
+            } // End for
+            
+            /* Check if all processes convergence */
+            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
 
             /* In the next loop perform convolution to the new image  - swapp images */
             tmp_ptr = my_image_before[0];
@@ -934,6 +973,21 @@ int main(void){
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
+            equality_flag = 0;
+            
+            /* Check if image after hasn't changed */
+            for(i = 1; i < my_height && (equality_flag == 0); i++){
+                for(j = 1; j < my_width; j++){
+                    if(my_image_before[i][j] != my_image_after[i][j]){
+                        equality_flag = 1;
+                        break;
+                    }
+                } // End for
+            } // End for
+            
+            /* Check if all processes convergence */
+            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
+
             /* In the next loop perform convolution to the new image  - swapp images */
             tmp_ptr = my_image_before[0];
 
@@ -1142,6 +1196,21 @@ int main(void){
 
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
+
+            equality_flag = 0;
+            
+            /* Check if image after hasn't changed */
+            for(i = 1; i < my_height && (equality_flag == 0); i++){
+                for(j = 1; j < my_width; j++){
+                    if(my_image_before[i][j] != my_image_after[i][j]){
+                        equality_flag = 1;
+                        break;
+                    }
+                } // End for
+            } // End for
+            
+            /* Check if all processes convergence */
+            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
 
             /* In the next loop perform convolution to the new image  - swapp images */
             tmp_ptr = my_image_before[0];
@@ -1454,6 +1523,21 @@ int main(void){
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
+            equality_flag = 0;
+            
+            /* Check if image after hasn't changed */
+            for(i = 1; i < my_height && (equality_flag == 0); i++){
+                for(j = 1; j < my_width; j++){
+                    if(my_image_before[i][j] != my_image_after[i][j]){
+                        equality_flag = 1;
+                        break;
+                    }
+                } // End for
+            } // End for
+            
+            /* Check if all processes convergence */
+            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
+
             /* In the next loop perform convolution to the new image  - swapp images */
             tmp_ptr = my_image_before[0];
 
@@ -1765,6 +1849,21 @@ int main(void){
             
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
+
+            equality_flag = 0;
+            
+            /* Check if image after hasn't changed */
+            for(i = 1; i < my_height && (equality_flag == 0); i++){
+                for(j = 1; j < my_width; j++){
+                    if(my_image_before[i][j] != my_image_after[i][j]){
+                        equality_flag = 1;
+                        break;
+                    }
+                } // End for
+            } // End for
+            
+            /* Check if all processes convergence */
+            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
 
             /* In the next loop perform convolution to the new image  - swapp images */
             tmp_ptr = my_image_before[0];
@@ -2082,6 +2181,21 @@ int main(void){
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
+            equality_flag = 0;
+            
+            /* Check if image after hasn't changed */
+            for(i = 1; i < my_height && (equality_flag == 0); i++){
+                for(j = 1; j < my_width; j++){
+                    if(my_image_before[i][j] != my_image_after[i][j]){
+                        equality_flag = 1;
+                        break;
+                    }
+                } // End for
+            } // End for
+            
+            /* Check if all processes convergence */
+            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
+
             /* In the next loop perform convolution to the new image  - swapp images */
             tmp_ptr = my_image_before[0];
 
@@ -2393,6 +2507,21 @@ int main(void){
             
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
+
+            equality_flag = 0;
+            
+            /* Check if image after hasn't changed */
+            for(i = 1; i < my_height && (equality_flag == 0); i++){
+                for(j = 1; j < my_width; j++){
+                    if(my_image_before[i][j] != my_image_after[i][j]){
+                        equality_flag = 1;
+                        break;
+                    }
+                } // End for
+            } // End for
+            
+            /* Check if all processes convergence */
+            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
 
             /* In the next loop perform convolution to the new image  - swapp images */
             tmp_ptr = my_image_before[0];
@@ -2805,6 +2934,21 @@ int main(void){
 
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
+
+            equality_flag = 0;
+            
+            /* Check if image after hasn't changed */
+            for(i = 1; i < my_height && (equality_flag == 0); i++){
+                for(j = 1; j < my_width; j++){
+                    if(my_image_before[i][j] != my_image_after[i][j]){
+                        equality_flag = 1;
+                        break;
+                    }
+                } // End for
+            } // End for
+            
+            /* Check if all processes convergence */
+            MPI_Allreduce(&equality_flag,&all_finished,1,MPI_INT,MPI_LOR,MPI_COMM_WORLD);
 
             /* In the next loop perform convolution to the new image  - swapp images */
             tmp_ptr = my_image_before[0];
