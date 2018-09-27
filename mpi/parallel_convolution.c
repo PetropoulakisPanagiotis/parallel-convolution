@@ -48,7 +48,7 @@ int main(void){
     /* Create a cartesian topology for better performance */
     MPI_Comm old_comm, my_cartesian_comm;
     int ndims, reorder, periods[2], dim_size[2];
-    
+
     old_comm = MPI_COMM_WORLD;
     ndims = 2;
     dim_size[0] = procs_per_line;
@@ -290,7 +290,7 @@ int main(void){
     my_image_after[0] = malloc((my_height_incr_2) * (my_width_incr_2) * sizeof(int));
     if(my_image_after[0] == NULL)
         MPI_Abort(my_cartesian_comm, error);
-    
+
     /* Fix array */
     for(i = 1; i < (my_height_incr_2); i++)
         my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
@@ -312,7 +312,7 @@ int main(void){
     }
 
     fclose(my_file);
-    
+
     /* Set columns type for sending columns East and West */
     MPI_Datatype column_type;
     MPI_Type_vector(my_height, 1, my_width_incr_2, MPI_INT, &column_type);
@@ -348,6 +348,9 @@ int main(void){
     /* ll -> lower left  */
     /* lr -> lower right */
 
+    MPI_Barrier(my_cartesian_comm);
+    double start = MPI_Wtime(); // Get start time before iterations
+
     /* Left upper process - active neighbours E, SE, S */
     if(my_rank == 0){
 
@@ -355,7 +358,7 @@ int main(void){
         for(iter = 0; iter < my_args.iterations; iter++){
 
             /* Start sending my pixels/non-blocking */
-            MPI_Startall(NUM_NEIGHBOURS, send_requests);
+            // MPI_Startall(NUM_NEIGHBOURS, send_requests);
 
             //////////////////////////////////
             /* Convolute inner pixels first */
@@ -439,7 +442,7 @@ int main(void){
             /* Keep receiving from all neighbours */
             for(k = 0; k < NUM_NEIGHBOURS; k++){
                 MPI_Waitany(NUM_NEIGHBOURS, recv_requests, &index, &recv_stat);
-                
+
                 /* Convolute right column and right upper corner */
                 if(recv_stat.MPI_TAG == E){
                     /* Right column */
@@ -474,7 +477,7 @@ int main(void){
                         my_image_after[1][my_width] = 0;
                     else if(my_image_after[1][my_width] > 255)
                         my_image_after[1][my_width] = 255;
-                } // End if E 
+                } // End if E
                 /* Convolute last line and left lower corner */
                 else if(recv_stat.MPI_TAG == S){
                     /* Last line */
@@ -511,7 +514,7 @@ int main(void){
                         my_image_after[my_height][1] = 255;
                 } // End if S
             } // End for - Wait any
-            
+
             /* Convolute right lower corner */
             my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
                                                     my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
@@ -527,7 +530,7 @@ int main(void){
                 my_image_after[my_height][my_width] = 0;
             else if(my_image_after[my_height][my_width] > 255)
                 my_image_after[my_height][my_width] = 255;
-            
+
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
@@ -543,18 +546,18 @@ int main(void){
                 my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
 
-        char fileName[10]="";
-        sprintf(fileName,"File%dB",my_rank);        
-        FILE* my_file = fopen(fileName, "w");
+        // char fileName[10]="";
+        // sprintf(fileName,"File%dB",my_rank);
+        // FILE* my_file = fopen(fileName, "w");
+        //
+        // for(i = 0; i < my_height_incr_2; i++){
+        //     for(j = 0; j < my_width_incr_2; j++){
+        //         fprintf(my_file, "%d\t", my_image_after[i][j]);
+        //     }
+        //     fprintf(my_file, "\n");
+        // }
+        // fclose(my_file);
 
-        for(i = 0; i < my_height_incr_2; i++){
-            for(j = 0; j < my_width_incr_2; j++){
-                fprintf(my_file, "%d\t", my_image_after[i][j]);   
-            }
-            fprintf(my_file, "\n");   
-        }
-        fclose(my_file);
-    
     } // End if a)
     /* Right upper process - active neighbours S, SW, W */
     else if(my_rank == procs_per_line_1){
@@ -638,7 +641,7 @@ int main(void){
                 else if(my_image_after[1][j] > 255)
                     my_image_after[1][j] = 255;
             } // End for
-            
+
             /* Start receiving neighbours pixels/non-blocking */
             MPI_Startall(NUM_NEIGHBOURS, recv_requests);
 
@@ -647,7 +650,7 @@ int main(void){
             /* Keep receiving from all neighbours */
             for(k = 0; k < NUM_NEIGHBOURS; k++){
                 MPI_Waitany(NUM_NEIGHBOURS, recv_requests, &index, &recv_stat);
-        
+
                 /* Convolute left column and left upper corner */
                 if(recv_stat.MPI_TAG == W){
                     /* Left column */
@@ -682,7 +685,7 @@ int main(void){
                         my_image_after[1][1] = 0;
                     else if(my_image_after[1][1] > 255)
                         my_image_after[1][1] = 255;
-                } // End if W 
+                } // End if W
                 /* Convolute last line and right lower corner */
                 else if(recv_stat.MPI_TAG == S){
                     /* Last line */
@@ -729,7 +732,7 @@ int main(void){
                                             my_image_before[my_height_incr_1][0] * my_args.filter[2][0] +
                                             my_image_before[my_height][0] * my_args.filter[1][0] +
                                             my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
-            
+
             /* Truncated unexpected values */
             if(my_image_after[my_height][1] < 0)
                 my_image_after[my_height][1] = 0;
@@ -750,19 +753,19 @@ int main(void){
             for(i = 1; i < my_height_incr_2; i++)
                 my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
-        
-        char fileName[10]="";
-        sprintf(fileName,"File%dB",my_rank);
 
-        FILE* my_file = fopen(fileName, "w");
-        for(i = 0; i < my_height_incr_2; i++){
-            for(j = 0; j < my_width_incr_2; j++){
-                fprintf(my_file, "%d\t", my_image_after[i][j]);   
-            }
-            fprintf(my_file, "\n");   
-        }
-        
-        fclose(my_file);
+        // char fileName[10]="";
+        // sprintf(fileName,"File%dB",my_rank);
+        //
+        // FILE* my_file = fopen(fileName, "w");
+        // for(i = 0; i < my_height_incr_2; i++){
+        //     for(j = 0; j < my_width_incr_2; j++){
+        //         fprintf(my_file, "%d\t", my_image_after[i][j]);
+        //     }
+        //     fprintf(my_file, "\n");
+        // }
+        //
+        // fclose(my_file);
 
     } // End if b)
     /* Right lower process - active neighbours W, NW, N */
@@ -885,13 +888,13 @@ int main(void){
                                                     my_image_before[my_height][2] * my_args.filter[1][2] +
                                                     my_image_before[my_height][0] * my_args.filter[1][0] +
                                                     my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
-                    
+
                     /* Truncated unexpected values */
                     if(my_image_after[my_height][1] < 0)
                         my_image_after[my_height][1] = 0;
                     else if(my_image_after[my_height][1] > 255)
                         my_image_after[my_height][1] = 255;
-                } // End if W 
+                } // End if W
                 /* Convolute first line and right upper corner */
                 else if(recv_stat.MPI_TAG == N){
                     /* First line */
@@ -938,7 +941,7 @@ int main(void){
                                     my_image_before[2][0] * my_args.filter[2][0] +
                                     my_image_before[1][0] * my_args.filter[1][0] +
                                     my_image_before[0][0] * my_args.filter[0][0]);
-            
+
             /* Truncated unexpected values */
             if(my_image_after[1][1] < 0)
                 my_image_after[1][1] = 0;
@@ -959,19 +962,19 @@ int main(void){
             for(i = 1; i < (my_height_incr_2); i++)
                 my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
-        
-        char fileName[10]="";
-        sprintf(fileName,"File%dB",my_rank);
 
-        FILE* my_file = fopen(fileName, "w");
-        for(i = 0; i < my_height_incr_2; i++){
-            for(j = 0; j < my_width_incr_2; j++){
-                fprintf(my_file, "%d\t", my_image_after[i][j]);   
-            }
-            fprintf(my_file, "\n");   
-        }
-        
-        fclose(my_file);
+        // char fileName[10]="";
+        // sprintf(fileName,"File%dB",my_rank);
+        //
+        // FILE* my_file = fopen(fileName, "w");
+        // for(i = 0; i < my_height_incr_2; i++){
+        //     for(j = 0; j < my_width_incr_2; j++){
+        //         fprintf(my_file, "%d\t", my_image_after[i][j]);
+        //     }
+        //     fprintf(my_file, "\n");
+        // }
+        //
+        // fclose(my_file);
     } // End if c)
     /* Left lower process - active neighbours N, NE, E */
     else if(my_rank == comm_size - procs_per_line){
@@ -1064,7 +1067,7 @@ int main(void){
             /* Keep receiving from all neighbours */
             for(k = 0; k < NUM_NEIGHBOURS; k++){
                 MPI_Waitany(NUM_NEIGHBOURS, recv_requests, &index, &recv_stat);
-                
+
                 /* Convolute right column and right lower corner */
                 if(recv_stat.MPI_TAG == E){
                     /* Right column */
@@ -1093,7 +1096,7 @@ int main(void){
                                                         my_image_before[my_height][my_width_incr_1] * my_args.filter[1][2] +
                                                         my_image_before[my_height][my_width_decr_1] * my_args.filter[1][0] +
                                                         my_image_before[my_height_decr_1][my_width_decr_1] * my_args.filter[0][0]);
-                    
+
                     /* Truncated unexpected values */
                     if(my_image_after[my_height][my_width] < 0)
                         my_image_after[my_height][my_width] = 0;
@@ -1120,7 +1123,7 @@ int main(void){
                         else if(my_image_after[1][j] > 255)
                             my_image_after[1][j] = 255;
                     } // End for
-                    
+
                     /* Left upper corner */
                     my_image_after[1][1] = (int)(my_image_before[1][1] * my_args.filter[1][1] +
                                             my_image_before[0][1] * my_args.filter[0][1] +
@@ -1128,7 +1131,7 @@ int main(void){
                                             my_image_before[1][2] * my_args.filter[1][2] +
                                             my_image_before[2][2] * my_args.filter[2][2] +
                                             my_image_before[2][1] * my_args.filter[2][1]);
-                    
+
                     /* Truncated unexpected values */
                     if(my_image_after[1][1] < 0)
                         my_image_after[1][1] = 0;
@@ -1147,7 +1150,7 @@ int main(void){
                                             my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
                                             my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
                                             my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
-            
+
             /* Truncated unexpected values */
             if(my_image_after[1][my_width] < 0)
                 my_image_after[1][my_width] = 0;
@@ -1159,7 +1162,7 @@ int main(void){
 
             /* In the next loop perform convolution to the new image  - swapp images */
             tmp_ptr = my_image_before[0];
-    
+
             my_image_before[0] = my_image_after[0];
             for(i = 1; i < my_height_incr_2; i++)
                 my_image_before[i] = &(my_image_before[0][i*(my_width_incr_2)]);
@@ -1168,23 +1171,23 @@ int main(void){
             for(i = 1; i < (my_height_incr_2); i++)
                 my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
-        
-        char fileName[10]="";
-        sprintf(fileName,"File%dB",my_rank);
 
-        FILE* my_file = fopen(fileName, "w");
-        for(i = 0; i < my_height_incr_2; i++){
-            for(j = 0; j < my_width_incr_2; j++){
-                fprintf(my_file, "%d\t", my_image_after[i][j]);   
-            }
-            fprintf(my_file, "\n");   
-        }
-        
-        fclose(my_file);
+        // char fileName[10]="";
+        // sprintf(fileName,"File%dB",my_rank);
+        //
+        // FILE* my_file = fopen(fileName, "w");
+        // for(i = 0; i < my_height_incr_2; i++){
+        //     for(j = 0; j < my_width_incr_2; j++){
+        //         fprintf(my_file, "%d\t", my_image_after[i][j]);
+        //     }
+        //     fprintf(my_file, "\n");
+        // }
+        //
+        // fclose(my_file);
     } // End if d)
     /* First line processes - except from first and last process in this line - active neighbours E, SE , S, SW, W */
     else if(my_rank < procs_per_line_1){
-        int flag_corner_ll = 0, flag_corner_lr = 0; // Flag == 3, convolute corners  
+        int flag_corner_ll = 0, flag_corner_lr = 0; // Flag == 3, convolute corners
 
         /* Perform convolution */
         for(iter = 0; iter < my_args.iterations; iter++){
@@ -1246,7 +1249,7 @@ int main(void){
             /* Keep receiving from all neighbours */
             for(k = 0; k < NUM_NEIGHBOURS; k++){
                 MPI_Waitany(NUM_NEIGHBOURS, recv_requests, &index, &recv_stat);
-    
+
                 /* Convolute right column, right upper corner and right lower corner*/
                 if(recv_stat.MPI_TAG == E){
                     flag_corner_lr += 1;
@@ -1300,8 +1303,8 @@ int main(void){
                             my_image_after[my_height][my_width] = 0;
                         else if(my_image_after[my_height][my_width] > 255)
                             my_image_after[my_height][my_width] = 255;
-                    } // End if corner 
-                } // End if E 
+                    } // End if corner
+                } // End if E
                 /* Check if it is possible to convolute right lower corner */
                 else if(recv_stat.MPI_TAG == SE){
                     flag_corner_lr += 1;
@@ -1321,7 +1324,7 @@ int main(void){
                             my_image_after[my_height][my_width] = 0;
                         else if(my_image_after[my_height][my_width] > 255)
                             my_image_after[my_height][my_width] = 255;
-                    } // End if corner 
+                    } // End if corner
                 } // End if SE
                 /* Convolute last line, left lower corner and right lower corner */
                 else if(recv_stat.MPI_TAG == S){
@@ -1358,13 +1361,13 @@ int main(void){
                                                         my_image_before[my_height_incr_1][0] * my_args.filter[2][0] +
                                                         my_image_before[my_height][0] * my_args.filter[1][0] +
                                                         my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
-            
+
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][1] < 0)
                             my_image_after[my_height][1] = 0;
                         else if(my_image_after[my_height][1] > 255)
                             my_image_after[my_height][1] = 255;
-                    } // End if corner 
+                    } // End if corner
 
                     /* Convolute right lower corner */
                     if(flag_corner_lr == 3){
@@ -1382,7 +1385,7 @@ int main(void){
                             my_image_after[my_height][my_width] = 0;
                         else if(my_image_after[my_height][my_width] > 255)
                             my_image_after[my_height][my_width] = 255;
-                    } // End if corner 
+                    } // End if corner
                 } // End if S
                 /* Check if it is possible to convolute left lower corner */
                 else if(recv_stat.MPI_TAG == SW){
@@ -1399,7 +1402,7 @@ int main(void){
                                                         my_image_before[my_height_incr_1][0] * my_args.filter[2][0] +
                                                         my_image_before[my_height][0] * my_args.filter[1][0] +
                                                         my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
-            
+
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][1] < 0)
                             my_image_after[my_height][1] = 0;
@@ -1455,7 +1458,7 @@ int main(void){
                                                         my_image_before[my_height_incr_1][0] * my_args.filter[2][0] +
                                                         my_image_before[my_height][0] * my_args.filter[1][0] +
                                                         my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
-            
+
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][1] < 0)
                             my_image_after[my_height][1] = 0;
@@ -1479,23 +1482,23 @@ int main(void){
             for(i = 1; i < (my_height_incr_2); i++)
                 my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
-        
-        char fileName[10]="";
-        sprintf(fileName,"File%dB",my_rank);
 
-        FILE* my_file = fopen(fileName, "w");
-        for(i = 0; i < my_height_incr_2; i++){
-            for(j = 0; j < my_width_incr_2; j++){
-                fprintf(my_file, "%d\t", my_image_after[i][j]);   
-            }
-            fprintf(my_file, "\n");   
-        }
-        
-        fclose(my_file);
+        // char fileName[10]="";
+        // sprintf(fileName,"File%dB",my_rank);
+        //
+        // FILE* my_file = fopen(fileName, "w");
+        // for(i = 0; i < my_height_incr_2; i++){
+        //     for(j = 0; j < my_width_incr_2; j++){
+        //         fprintf(my_file, "%d\t", my_image_after[i][j]);
+        //     }
+        //     fprintf(my_file, "\n");
+        // }
+        //
+        // fclose(my_file);
     } // End if e)
     /* Right column processes - except from first and last process in this column - active neighbours N, S, SW, W, NW */
     else if(my_rank % procs_per_line == procs_per_line_1){
-        int flag_corner_ul = 0, flag_corner_ll = 0; // Flag == 3, convolute corners  
+        int flag_corner_ul = 0, flag_corner_ll = 0; // Flag == 3, convolute corners
 
         /* Perform convolution */
         for(iter = 0; iter < my_args.iterations; iter++){
@@ -1592,7 +1595,7 @@ int main(void){
                         my_image_after[1][my_width] = 0;
                     else if(my_image_after[1][my_width] > 255)
                         my_image_after[1][my_width] = 255;
-                
+
                     /* Convolute left upper corner */
                     if(flag_corner_ul == 3){
                         my_image_after[1][1] = (int)(my_image_before[1][1] * my_args.filter[1][1] +
@@ -1604,13 +1607,13 @@ int main(void){
                                                 my_image_before[2][0] * my_args.filter[2][0] +
                                                 my_image_before[1][0] * my_args.filter[1][0] +
                                                 my_image_before[0][0] * my_args.filter[0][0]);
-            
+
                         /* Truncated unexpected values */
                         if(my_image_after[1][1] < 0)
                             my_image_after[1][1] = 0;
                         else if(my_image_after[1][1] > 255)
                         my_image_after[1][1] = 255;
-                    } // End if corner 
+                    } // End if corner
                 } // End if N
                 /* Convolute last line, right lower corner and left lower corner */
                 else if(recv_stat.MPI_TAG == S){
@@ -1659,13 +1662,13 @@ int main(void){
                                                         my_image_before[my_height_incr_1][0] * my_args.filter[2][0] +
                                                         my_image_before[my_height][0] * my_args.filter[1][0] +
                                                         my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
-            
+
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][1] < 0)
                             my_image_after[my_height][1] = 0;
                         else if(my_image_after[my_height][1] > 255)
                             my_image_after[my_height][1] = 255;
-                    } // End if corner   
+                    } // End if corner
                 } // End if S
                 /* Check if it is possible to convolute left lower corner */
                 else if(recv_stat.MPI_TAG == SW){
@@ -1682,7 +1685,7 @@ int main(void){
                                                         my_image_before[my_height_incr_1][0] * my_args.filter[2][0] +
                                                         my_image_before[my_height][0] * my_args.filter[1][0] +
                                                         my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
-            
+
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][1] < 0)
                             my_image_after[my_height][1] = 0;
@@ -1725,7 +1728,7 @@ int main(void){
                                                         my_image_before[my_height_incr_1][0] * my_args.filter[2][0] +
                                                         my_image_before[my_height][0] * my_args.filter[1][0] +
                                                         my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
-            
+
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][1] < 0)
                             my_image_after[my_height][1] = 0;
@@ -1744,18 +1747,18 @@ int main(void){
                                                 my_image_before[2][0] * my_args.filter[2][0] +
                                                 my_image_before[1][0] * my_args.filter[1][0] +
                                                 my_image_before[0][0] * my_args.filter[0][0]);
-                    
+
                         /* Truncated unexpected values */
                         if(my_image_after[1][1] < 0)
                             my_image_after[1][1] = 0;
                         else if(my_image_after[1][1] > 255)
                             my_image_after[1][1] = 255;
                     } // End if corner
-                } // End if W 
+                } // End if W
                 /* Check if it is possible to convolute left upper corner */
                 else if(recv_stat.MPI_TAG == NW){
                     flag_corner_ul += 1;
-                    
+
                     /* Convolute left upper corner */
                     if(flag_corner_ul == 3){
                         my_image_after[1][1] = (int)(my_image_before[1][1] * my_args.filter[1][1] +
@@ -1767,16 +1770,16 @@ int main(void){
                                                 my_image_before[2][0] * my_args.filter[2][0] +
                                                 my_image_before[1][0] * my_args.filter[1][0] +
                                                 my_image_before[0][0] * my_args.filter[0][0]);
-                    
+
                         /* Truncated unexpected values */
                         if(my_image_after[1][1] < 0)
                             my_image_after[1][1] = 0;
                         else if(my_image_after[1][1] > 255)
                             my_image_after[1][1] = 255;
-                    } // End if corner 
+                    } // End if corner
                 } // End if NW
             } // End for - Wait any
-            
+
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
@@ -1791,24 +1794,24 @@ int main(void){
             for(i = 1; i < my_height_incr_2; i++)
                 my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
-        
-        char fileName[10]="";
-        sprintf(fileName,"File%dB",my_rank);
 
-        FILE* my_file = fopen(fileName, "w");
-        for(i = 0; i < my_height_incr_2; i++){
-            for(j = 0; j < my_width_incr_2; j++){
-                fprintf(my_file, "%d\t", my_image_after[i][j]);   
-            }
-            fprintf(my_file, "\n");   
-        }
-        
-        fclose(my_file);
+        // char fileName[10]="";
+        // sprintf(fileName,"File%dB",my_rank);
+        //
+        // FILE* my_file = fopen(fileName, "w");
+        // for(i = 0; i < my_height_incr_2; i++){
+        //     for(j = 0; j < my_width_incr_2; j++){
+        //         fprintf(my_file, "%d\t", my_image_after[i][j]);
+        //     }
+        //     fprintf(my_file, "\n");
+        // }
+        //
+        // fclose(my_file);
 
     } // End if f)
     /* Last line processes - except from first and last process in this line - active neighbours N, NE, E, W, NW */
     else if(my_rank > procs_per_line * procs_per_line_1){
-        int flag_corner_ul = 0, flag_corner_ur = 0; // Flag == 3, convolute corners  
+        int flag_corner_ul = 0, flag_corner_ur = 0; // Flag == 3, convolute corners
 
         /* Perform convolution */
         for(iter = 0; iter < my_args.iterations; iter++){
@@ -1870,7 +1873,7 @@ int main(void){
             /* Keep receiving from all neighbours */
             for(k = 0; k < NUM_NEIGHBOURS; k++){
                 MPI_Waitany(NUM_NEIGHBOURS, recv_requests, &index, &recv_stat);
-           
+
                 /* Convolute first line */
                 if(recv_stat.MPI_TAG == N){
                     flag_corner_ul += 1;
@@ -1894,7 +1897,7 @@ int main(void){
                         else if(my_image_after[1][j] > 255)
                             my_image_after[1][j] = 255;
                     } // End for
-                   
+
                     /* Convolute left upper corner */
                     if(flag_corner_ul == 3){
                         my_image_after[1][1] = (int)(my_image_before[1][1] * my_args.filter[1][1] +
@@ -1906,7 +1909,7 @@ int main(void){
                                                 my_image_before[2][0] * my_args.filter[2][0] +
                                                 my_image_before[1][0] * my_args.filter[1][0] +
                                                 my_image_before[0][0] * my_args.filter[0][0]);
-                    
+
                         /* Truncated unexpected values */
                         if(my_image_after[1][1] < 0)
                             my_image_after[1][1] = 0;
@@ -1925,7 +1928,7 @@ int main(void){
                                                         my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
                                                         my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
                                                         my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
-            
+
                         /* Truncated unexpected values */
                         if(my_image_after[1][my_width] < 0)
                             my_image_after[1][my_width] = 0;
@@ -1948,7 +1951,7 @@ int main(void){
                                                         my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
                                                         my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
                                                         my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
-            
+
                         /* Truncated unexpected values */
                         if(my_image_after[1][my_width] < 0)
                             my_image_after[1][my_width] = 0;
@@ -1986,13 +1989,13 @@ int main(void){
                                                         my_image_before[my_height][my_width_incr_1] * my_args.filter[1][2] +
                                                         my_image_before[my_height][my_width_decr_1] * my_args.filter[1][0] +
                                                         my_image_before[my_height_decr_1][my_width_decr_1] * my_args.filter[0][0]);
-                    
+
                     /* Truncated unexpected values */
                     if(my_image_after[my_height][my_width] < 0)
                         my_image_after[my_height][my_width] = 0;
                     else if(my_image_after[my_height][my_width] > 255)
                         my_image_after[my_height][my_width] = 255;
-                    
+
                     /* Convolute right upper corner */
                     if(flag_corner_ur == 3){
                         my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
@@ -2004,7 +2007,7 @@ int main(void){
                                                         my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
                                                         my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
                                                         my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
-            
+
                         /* Truncated unexpected values */
                         if(my_image_after[1][my_width] < 0)
                             my_image_after[1][my_width] = 0;
@@ -2015,7 +2018,7 @@ int main(void){
                 /* Convolute left column, left lower corner and left upper corner */
                 if(recv_stat.MPI_TAG == W){
                     flag_corner_ul += 1;
-                    
+
                     /* Left column */
                     for(i = 2; i < my_height; i++){
                         my_image_after[i][1] = (int)(my_image_before[i][1] * my_args.filter[1][1] +
@@ -2042,13 +2045,13 @@ int main(void){
                                                     my_image_before[my_height][2] * my_args.filter[1][2] +
                                                     my_image_before[my_height][0] * my_args.filter[1][0] +
                                                     my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
-                    
+
                     /* Truncated unexpected values */
                     if(my_image_after[my_height][1] < 0)
                         my_image_after[my_height][1] = 0;
                     else if(my_image_after[my_height][1] > 255)
                         my_image_after[my_height][1] = 255;
-                    
+
                     /* Convolute left upper corner */
                     if(flag_corner_ul == 3){
                         my_image_after[1][1] = (int)(my_image_before[1][1] * my_args.filter[1][1] +
@@ -2060,14 +2063,14 @@ int main(void){
                                                 my_image_before[2][0] * my_args.filter[2][0] +
                                                 my_image_before[1][0] * my_args.filter[1][0] +
                                                 my_image_before[0][0] * my_args.filter[0][0]);
-                    
+
                         /* Truncated unexpected values */
                         if(my_image_after[1][1] < 0)
                             my_image_after[1][1] = 0;
                         else if(my_image_after[1][1] > 255)
                             my_image_after[1][1] = 255;
                     } // End if corner
-                } // End if W 
+                } // End if W
                 /* Check if it is possible to convolute left upper corner */
                 if(recv_stat.MPI_TAG == NW){
                     flag_corner_ul += 1;
@@ -2083,7 +2086,7 @@ int main(void){
                                                 my_image_before[2][0] * my_args.filter[2][0] +
                                                 my_image_before[1][0] * my_args.filter[1][0] +
                                                 my_image_before[0][0] * my_args.filter[0][0]);
-                    
+
                         /* Truncated unexpected values */
                         if(my_image_after[1][1] < 0)
                             my_image_after[1][1] = 0;
@@ -2107,23 +2110,23 @@ int main(void){
             for(i = 1; i < (my_height_incr_2); i++)
                 my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
-        
-        char fileName[10]="";
-        sprintf(fileName,"File%dB",my_rank);
 
-        FILE* my_file = fopen(fileName, "w");
-        for(i = 0; i < my_height_incr_2; i++){
-            for(j = 0; j < my_width_incr_2; j++){
-                fprintf(my_file, "%d\t", my_image_after[i][j]);   
-            }
-            fprintf(my_file, "\n");   
-        }
-        
-        fclose(my_file);
+        // char fileName[10]="";
+        // sprintf(fileName,"File%dB",my_rank);
+        //
+        // FILE* my_file = fopen(fileName, "w");
+        // for(i = 0; i < my_height_incr_2; i++){
+        //     for(j = 0; j < my_width_incr_2; j++){
+        //         fprintf(my_file, "%d\t", my_image_after[i][j]);
+        //     }
+        //     fprintf(my_file, "\n");
+        // }
+        //
+        // fclose(my_file);
     } // End if g)
     /* Left column processes - except from first and last process in this column - active neighbours N, NE, E, SE, S */
     else if(my_rank % procs_per_line == 0){
-        int flag_corner_ur = 0, flag_corner_lr = 0; // Flag == 3, convolute corners  
+        int flag_corner_ur = 0, flag_corner_lr = 0; // Flag == 3, convolute corners
 
         /* Perform convolution */
         for(iter = 0; iter < my_args.iterations; iter++){
@@ -2185,7 +2188,7 @@ int main(void){
             /* Keep receiving from all neighbours */
             for(k = 0; k < NUM_NEIGHBOURS; k++){
                 MPI_Waitany(NUM_NEIGHBOURS, recv_requests, &index, &recv_stat);
-            
+
                 /* Convolute first line, left upper corner and right upper corner */
                 if(recv_stat.MPI_TAG == N){
                     flag_corner_ur += 1;
@@ -2208,7 +2211,7 @@ int main(void){
                         else if(my_image_after[1][j] > 255)
                             my_image_after[1][j] = 255;
                     } // End for
-                    
+
                     /* Left upper corner */
                     my_image_after[1][1] = (int)(my_image_before[1][1] * my_args.filter[1][1] +
                                             my_image_before[0][1] * my_args.filter[0][1] +
@@ -2216,7 +2219,7 @@ int main(void){
                                             my_image_before[1][2] * my_args.filter[1][2] +
                                             my_image_before[2][2] * my_args.filter[2][2] +
                                             my_image_before[2][1] * my_args.filter[2][1]);
-                    
+
                     /* Truncated unexpected values */
                     if(my_image_after[1][1] < 0)
                         my_image_after[1][1] = 0;
@@ -2234,13 +2237,13 @@ int main(void){
                                                         my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
                                                         my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
                                                         my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
-            
+
                         /* Truncated unexpected values */
                         if(my_image_after[1][my_width] < 0)
                             my_image_after[1][my_width] = 0;
                         else if(my_image_after[1][my_width] > 255)
                             my_image_after[1][my_width] = 255;
-                    } // End if corner 
+                    } // End if corner
                 } // End if N
                 /* Check if it is possible to convolute right upper corner */
                 else if(recv_stat.MPI_TAG == NE){
@@ -2257,7 +2260,7 @@ int main(void){
                                                         my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
                                                         my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
                                                         my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
-            
+
                         /* Truncated unexpected values */
                         if(my_image_after[1][my_width] < 0)
                             my_image_after[1][my_width] = 0;
@@ -2300,7 +2303,7 @@ int main(void){
                                                         my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
                                                         my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
                                                         my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
-            
+
                         /* Truncated unexpected values */
                         if(my_image_after[1][my_width] < 0)
                             my_image_after[1][my_width] = 0;
@@ -2324,7 +2327,7 @@ int main(void){
                             my_image_after[my_height][my_width] = 0;
                         else if(my_image_after[my_height][my_width] > 255)
                             my_image_after[my_height][my_width] = 255;
-                    } // End if corner 
+                    } // End if corner
                 } // End if E
                 /* Check if it is possible to convolute right lower corner */
                 else if(recv_stat.MPI_TAG == SE){
@@ -2346,7 +2349,7 @@ int main(void){
                             my_image_after[my_height][my_width] = 0;
                         else if(my_image_after[my_height][my_width] > 255)
                             my_image_after[my_height][my_width] = 255;
-                    } // End if corner 
+                    } // End if corner
                 } // End if SE
                 /* Convolute last line, left lower corner and right lower corner */
                 else if(recv_stat.MPI_TAG == S){
@@ -2401,10 +2404,10 @@ int main(void){
                             my_image_after[my_height][my_width] = 0;
                         else if(my_image_after[my_height][my_width] > 255)
                             my_image_after[my_height][my_width] = 255;
-                    } // End if corner 
+                    } // End if corner
                 } // End if S
             } // End for - Wait any
-            
+
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
@@ -2419,24 +2422,24 @@ int main(void){
             for(i = 1; i < (my_height_incr_2); i++)
                 my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
-        
-        char fileName[10]="";
-        sprintf(fileName,"File%dB",my_rank);
 
-        FILE* my_file = fopen(fileName, "w");
-        for(i = 0; i < my_height_incr_2; i++){
-            for(j = 0; j < my_width_incr_2; j++){
-                fprintf(my_file, "%d\t", my_image_after[i][j]);   
-            }
-            fprintf(my_file, "\n");   
-        }
-        
-        fclose(my_file);
+        // char fileName[10]="";
+        // sprintf(fileName,"File%dB",my_rank);
+        //
+        // FILE* my_file = fopen(fileName, "w");
+        // for(i = 0; i < my_height_incr_2; i++){
+        //     for(j = 0; j < my_width_incr_2; j++){
+        //         fprintf(my_file, "%d\t", my_image_after[i][j]);
+        //     }
+        //     fprintf(my_file, "\n");
+        // }
+        //
+        // fclose(my_file);
     } // End if h)
     /* Inner processes - all neighbours are active */
     else{
-        int flag_corner_ul = 0, flag_corner_ur = 0, flag_corner_ll = 0, flag_corner_lr = 0; // Flag == 3, convolute corners  
-        
+        int flag_corner_ul = 0, flag_corner_ur = 0, flag_corner_ll = 0, flag_corner_lr = 0; // Flag == 3, convolute corners
+
         /* Perform convolution */
         for(iter = 0; iter < my_args.iterations; iter++){
 
@@ -2477,7 +2480,7 @@ int main(void){
             /* Keep receiving from all neighbours */
             for(k = 0; k < NUM_NEIGHBOURS; k++){
                 MPI_Waitany(NUM_NEIGHBOURS, recv_requests, &index, &recv_stat);
-            
+
                 /* Convolute first line, left upper corner and right upper corner */
                 if(recv_stat.MPI_TAG == N){
                     flag_corner_ul += 1;
@@ -2501,7 +2504,7 @@ int main(void){
                         else if(my_image_after[1][j] > 255)
                             my_image_after[1][j] = 255;
                     } // End for
-                   
+
                     /* Convolute left upper corner */
                     if(flag_corner_ul == 3){
                         my_image_after[1][1] = (int)(my_image_before[1][1] * my_args.filter[1][1] +
@@ -2513,7 +2516,7 @@ int main(void){
                                                 my_image_before[2][0] * my_args.filter[2][0] +
                                                 my_image_before[1][0] * my_args.filter[1][0] +
                                                 my_image_before[0][0] * my_args.filter[0][0]);
-                    
+
                         /* Truncated unexpected values */
                         if(my_image_after[1][1] < 0)
                             my_image_after[1][1] = 0;
@@ -2532,7 +2535,7 @@ int main(void){
                                                         my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
                                                         my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
                                                         my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
-            
+
                         /* Truncated unexpected values */
                         if(my_image_after[1][my_width] < 0)
                             my_image_after[1][my_width] = 0;
@@ -2555,7 +2558,7 @@ int main(void){
                                                         my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
                                                         my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
                                                         my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
-            
+
                         /* Truncated unexpected values */
                         if(my_image_after[1][my_width] < 0)
                             my_image_after[1][my_width] = 0;
@@ -2598,7 +2601,7 @@ int main(void){
                                                         my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
                                                         my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
                                                         my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
-            
+
                         /* Truncated unexpected values */
                         if(my_image_after[1][my_width] < 0)
                             my_image_after[1][my_width] = 0;
@@ -2622,7 +2625,7 @@ int main(void){
                             my_image_after[my_height][my_width] = 0;
                         else if(my_image_after[my_height][my_width] > 255)
                             my_image_after[my_height][my_width] = 255;
-                    } // End if corner 
+                    } // End if corner
                 } // End if E
                 /* Check if it is possible to convolute right lower corner */
                 else if(recv_stat.MPI_TAG == SE){
@@ -2643,7 +2646,7 @@ int main(void){
                             my_image_after[my_height][my_width] = 0;
                         else if(my_image_after[my_height][my_width] > 255)
                             my_image_after[my_height][my_width] = 255;
-                    } // End if corner 
+                    } // End if corner
                 } // End if SE
                 /* Convolute last line, left lower corner and right lower corner */
                 else if(recv_stat.MPI_TAG == S){
@@ -2680,13 +2683,13 @@ int main(void){
                                                         my_image_before[my_height_incr_1][0] * my_args.filter[2][0] +
                                                         my_image_before[my_height][0] * my_args.filter[1][0] +
                                                         my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
-            
+
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][1] < 0)
                             my_image_after[my_height][1] = 0;
                         else if(my_image_after[my_height][1] > 255)
                             my_image_after[my_height][1] = 255;
-                    } // End if corner   
+                    } // End if corner
                     /* Convolute right lower corner */
                     if(flag_corner_lr == 3){
                         my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
@@ -2703,7 +2706,7 @@ int main(void){
                             my_image_after[my_height][my_width] = 0;
                         else if(my_image_after[my_height][my_width] > 255)
                             my_image_after[my_height][my_width] = 255;
-                    } // End if corner 
+                    } // End if corner
                 } // End if S
                 /* Check if it is possible to convolute left lower corner */
                 else if(recv_stat.MPI_TAG == SW){
@@ -2720,7 +2723,7 @@ int main(void){
                                                         my_image_before[my_height_incr_1][0] * my_args.filter[2][0] +
                                                         my_image_before[my_height][0] * my_args.filter[1][0] +
                                                         my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
-            
+
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][1] < 0)
                             my_image_after[my_height][1] = 0;
@@ -2732,7 +2735,7 @@ int main(void){
                 if(recv_stat.MPI_TAG == W){
                     flag_corner_ul += 1;
                     flag_corner_ll += 1;
-                    
+
                     /* Left column */
                     for(i = 2; i < my_height; i++){
                         my_image_after[i][1] = (int)(my_image_before[i][1] * my_args.filter[1][1] +
@@ -2763,7 +2766,7 @@ int main(void){
                                                         my_image_before[my_height_incr_1][0] * my_args.filter[2][0] +
                                                         my_image_before[my_height][0] * my_args.filter[1][0] +
                                                         my_image_before[my_height_decr_1][0] * my_args.filter[0][0]);
-            
+
                         /* Truncated unexpected values */
                         if(my_image_after[my_height][1] < 0)
                             my_image_after[my_height][1] = 0;
@@ -2782,14 +2785,14 @@ int main(void){
                                                 my_image_before[2][0] * my_args.filter[2][0] +
                                                 my_image_before[1][0] * my_args.filter[1][0] +
                                                 my_image_before[0][0] * my_args.filter[0][0]);
-                    
+
                         /* Truncated unexpected values */
                         if(my_image_after[1][1] < 0)
                             my_image_after[1][1] = 0;
                         else if(my_image_after[1][1] > 255)
                             my_image_after[1][1] = 255;
                     } // End if corner
-                } // End if W 
+                } // End if W
                 /* Check if it is possible to convolute left upper corner */
                 if(recv_stat.MPI_TAG == NW){
                     flag_corner_ul += 1;
@@ -2805,16 +2808,16 @@ int main(void){
                                                 my_image_before[2][0] * my_args.filter[2][0] +
                                                 my_image_before[1][0] * my_args.filter[1][0] +
                                                 my_image_before[0][0] * my_args.filter[0][0]);
-                    
+
                         /* Truncated unexpected values */
                         if(my_image_after[1][1] < 0)
                             my_image_after[1][1] = 0;
                         else if(my_image_after[1][1] > 255)
                             my_image_after[1][1] = 255;
                     } // End if corner
-                } // End if NW 
+                } // End if NW
             } // End for
-            
+
             /* Wait all pixles to be send before to procceeding to the next loop */
             MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
@@ -2829,20 +2832,35 @@ int main(void){
             for(i = 1; i < (my_height_incr_2); i++)
                 my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
-        
-        char fileName[10]="";
-        sprintf(fileName,"File%dB",my_rank);
 
-        FILE* my_file = fopen(fileName, "w");
-        for(i = 0; i < my_height_incr_2; i++){
-            for(j = 0; j < my_width_incr_2; j++){
-                fprintf(my_file, "%d\t", my_image_after[i][j]);   
-            }
-            fprintf(my_file, "\n");   
-        }
-        
-        fclose(my_file);
+        // char fileName[10]="";
+        // sprintf(fileName,"File%dB",my_rank);
+        //
+        // FILE* my_file = fopen(fileName, "w");
+        // for(i = 0; i < my_height_incr_2; i++){
+        //     for(j = 0; j < my_width_incr_2; j++){
+        //         fprintf(my_file, "%d\t", my_image_after[i][j]);
+        //     }
+        //     fprintf(my_file, "\n");
+        // }
+        //
+        // fclose(my_file);
     } // End else i)
+
+    double end = MPI_Wtime();
+    double time_elapsed = end - start;
+    printf("[%d] My time is %lf\n", my_rank, time_elapsed);
+
+    double max_time;
+    MPI_Reduce(&time_elapsed, &max_time, 1, MPI_DOUBLE, MPI_MAX, 0, my_cartesian_comm);
+
+    if(my_rank == 0){
+        printf("\n[Parallel Convolution Completed]:\nType of Image: %d\nResolution: %d x %d\nSeed Given: %d\nNumber of Iterations: %d\nNumber of Processes: %d\nCompleted in: %.3lf seconds\n",
+                  my_args.image_type, my_args.image_width, my_args.image_height, my_args.image_seed,
+                  my_args.iterations, comm_size, max_time);
+    }
+
+    // printf("[%d] My time is %lf\n", my_rank, end - start);
 
     /* Free memory */
     free(my_image_before[0]);
