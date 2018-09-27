@@ -45,6 +45,20 @@ int main(void){
         }
     }
 
+    /* Create a cartesian topology for better performance */
+    MPI_Comm old_comm, my_cartesian_comm;
+    int ndims, reorder, periods[2], dim_size[2];
+    
+    old_comm = MPI_COMM_WORLD;
+    ndims = 2;
+    dim_size[0] = procs_per_line;
+    dim_size[1] = procs_per_line;
+    periods[0] = 0;
+    periods[1] = 0;
+    reorder = 1;
+
+    MPI_Cart_create(old_comm,ndims,dim_size,periods,reorder,&my_cartesian_comm);
+
     /* Define in contiguous derived type - use it for filter */
     MPI_Type_contiguous(FILTER_SIZE, MPI_DOUBLE, &filter_type1); // 3x1
     MPI_Type_commit(&filter_type1);
@@ -78,7 +92,7 @@ int main(void){
 
         error = read_user_input(&my_args, procs_per_line);
         if(error != 0)
-            MPI_Abort(MPI_COMM_WORLD, error);
+            MPI_Abort(my_cartesian_comm, error);
 
         /* Calculate the limits for every images */
         my_args.width_per_process = my_args.image_width / (int)sqrt(comm_size);
@@ -96,12 +110,12 @@ int main(void){
 
         /* Send arguments in other proccesses */
         for(i = 1; i < comm_size; i++)
-            MPI_Send(&my_args, 1, args_type, i, 1, MPI_COMM_WORLD);
+            MPI_Send(&my_args, 1, args_type, i, 1, my_cartesian_comm);
     }
     else{
 
         /* Get arguments from process 0*/
-        MPI_Recv(&my_args, 1, args_type, 0, 1, MPI_COMM_WORLD, &stat);
+        MPI_Recv(&my_args, 1, args_type, 0, 1, my_cartesian_comm, &stat);
 
         /* Print arguments received
         printf("{%d}t: %d, w:%d, h:%d, s:%d\nF:%lf %lf %lf %lf %lf %lf %lf %lf %lf\nwp: %d, wr: %d, hp: %d, hr: %d, iter: %d\n",
@@ -240,12 +254,12 @@ int main(void){
     /* Allocate pointers for height */
     my_image_before = malloc((my_height_incr_2) * sizeof(int*));
     if(my_image_before == NULL)
-        MPI_Abort(MPI_COMM_WORLD, error);
+        MPI_Abort(my_cartesian_comm, error);
 
     /* Allocate a contiguous array */
     my_image_before[0] = malloc((my_height_incr_2) * (my_width_incr_2) * sizeof(int));
     if(my_image_before[0] == NULL)
-        MPI_Abort(MPI_COMM_WORLD, error);
+        MPI_Abort(my_cartesian_comm, error);
 
     /* Fix array(rows) */
     for(i = 1; i < (my_height_incr_2); i++)
@@ -270,12 +284,12 @@ int main(void){
     /* Allocate an image to save the result */
     my_image_after = malloc((my_height_incr_2) * sizeof(int*));
     if(my_image_after == NULL)
-        MPI_Abort(MPI_COMM_WORLD, error);
+        MPI_Abort(my_cartesian_comm, error);
 
     /* Allocate a contiguous array */
     my_image_after[0] = malloc((my_height_incr_2) * (my_width_incr_2) * sizeof(int));
     if(my_image_after[0] == NULL)
-        MPI_Abort(MPI_COMM_WORLD, error);
+        MPI_Abort(my_cartesian_comm, error);
     
     /* Fix array */
     for(i = 1; i < (my_height_incr_2); i++)
@@ -309,24 +323,24 @@ int main(void){
     MPI_Request recv_requests[NUM_NEIGHBOURS];
 
     /* Send to each neighbour, tagging it with the opposite direction of the receiving process(eg N->S, SW -> NE) */
-    MPI_Send_init(&my_image_before[1][1], my_width, MPI_INT, neighbours[N], S, MPI_COMM_WORLD, &send_requests[N]);
-    MPI_Send_init(&my_image_before[1][my_width], 1, MPI_INT, neighbours[NE], SW,MPI_COMM_WORLD, &send_requests[NE]);
-    MPI_Send_init(&my_image_before[1][my_width], 1, column_type, neighbours[E], W, MPI_COMM_WORLD, &send_requests[E]);
-    MPI_Send_init(&my_image_before[my_height][my_width], 1, MPI_INT, neighbours[SE], NW, MPI_COMM_WORLD, &send_requests[SE]);
-    MPI_Send_init(&my_image_before[my_height][1], my_width, MPI_INT, neighbours[S], N, MPI_COMM_WORLD, &send_requests[S]);
-    MPI_Send_init(&my_image_before[my_height][1], 1, MPI_INT, neighbours[SW], NE, MPI_COMM_WORLD, &send_requests[SW]);
-    MPI_Send_init(&my_image_before[1][1], 1, column_type, neighbours[W], E, MPI_COMM_WORLD, &send_requests[W]);
-    MPI_Send_init(&my_image_before[1][1], 1, MPI_INT, neighbours[NW], SE, MPI_COMM_WORLD, &send_requests[NW]);
+    MPI_Send_init(&my_image_before[1][1], my_width, MPI_INT, neighbours[N], S, my_cartesian_comm, &send_requests[N]);
+    MPI_Send_init(&my_image_before[1][my_width], 1, MPI_INT, neighbours[NE], SW, my_cartesian_comm, &send_requests[NE]);
+    MPI_Send_init(&my_image_before[1][my_width], 1, column_type, neighbours[E], W, my_cartesian_comm, &send_requests[E]);
+    MPI_Send_init(&my_image_before[my_height][my_width], 1, MPI_INT, neighbours[SE], NW, my_cartesian_comm, &send_requests[SE]);
+    MPI_Send_init(&my_image_before[my_height][1], my_width, MPI_INT, neighbours[S], N, my_cartesian_comm, &send_requests[S]);
+    MPI_Send_init(&my_image_before[my_height][1], 1, MPI_INT, neighbours[SW], NE, my_cartesian_comm, &send_requests[SW]);
+    MPI_Send_init(&my_image_before[1][1], 1, column_type, neighbours[W], E, my_cartesian_comm, &send_requests[W]);
+    MPI_Send_init(&my_image_before[1][1], 1, MPI_INT, neighbours[NW], SE, my_cartesian_comm, &send_requests[NW]);
 
     /* Receive from all neighbours */
-    MPI_Recv_init(&my_image_before[0][1], my_width, MPI_INT, neighbours[N], N, MPI_COMM_WORLD, &recv_requests[N]);
-    MPI_Recv_init(&my_image_before[0][my_width_incr_1], 1, MPI_INT, neighbours[NE], NE, MPI_COMM_WORLD, &recv_requests[NE]);
-    MPI_Recv_init(&my_image_before[1][my_width_incr_1], 1, column_type, neighbours[E], E, MPI_COMM_WORLD, &recv_requests[E]);
-    MPI_Recv_init(&my_image_before[my_height_incr_1][my_width_incr_1], 1, MPI_INT, neighbours[SE], SE, MPI_COMM_WORLD, &recv_requests[SE]);
-    MPI_Recv_init(&my_image_before[my_height_incr_1][1], my_width, MPI_INT, neighbours[S], S, MPI_COMM_WORLD, &recv_requests[S]);
-    MPI_Recv_init(&my_image_before[my_height_incr_1][0], 1, MPI_INT, neighbours[SW],SW,MPI_COMM_WORLD,&recv_requests[SW]);
-    MPI_Recv_init(&my_image_before[1][0], 1, column_type, neighbours[W], W, MPI_COMM_WORLD, &recv_requests[W]);
-    MPI_Recv_init(&my_image_before[0][0], 1, MPI_INT, neighbours[NW], NW, MPI_COMM_WORLD, &recv_requests[NW]);
+    MPI_Recv_init(&my_image_before[0][1], my_width, MPI_INT, neighbours[N], N, my_cartesian_comm, &recv_requests[N]);
+    MPI_Recv_init(&my_image_before[0][my_width_incr_1], 1, MPI_INT, neighbours[NE], NE, my_cartesian_comm, &recv_requests[NE]);
+    MPI_Recv_init(&my_image_before[1][my_width_incr_1], 1, column_type, neighbours[E], E, my_cartesian_comm, &recv_requests[E]);
+    MPI_Recv_init(&my_image_before[my_height_incr_1][my_width_incr_1], 1, MPI_INT, neighbours[SE], SE, my_cartesian_comm, &recv_requests[SE]);
+    MPI_Recv_init(&my_image_before[my_height_incr_1][1], my_width, MPI_INT, neighbours[S], S, my_cartesian_comm, &recv_requests[S]);
+    MPI_Recv_init(&my_image_before[my_height_incr_1][0], 1, MPI_INT, neighbours[SW],SW, my_cartesian_comm, &recv_requests[SW]);
+    MPI_Recv_init(&my_image_before[1][0], 1, column_type, neighbours[W], W, my_cartesian_comm, &recv_requests[W]);
+    MPI_Recv_init(&my_image_before[0][0], 1, MPI_INT, neighbours[NW], NW, my_cartesian_comm, &recv_requests[NW]);
 
     /* Note for flags    */
     /* ur -> upper right */
