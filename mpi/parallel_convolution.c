@@ -360,6 +360,10 @@ int main(void){
             /* Start sending my pixels/non-blocking */
             MPI_Startall(NUM_NEIGHBOURS, send_requests);
 
+
+            /* Start receiving neighbours pixels/non-blocking */
+            MPI_Startall(NUM_NEIGHBOURS, recv_requests);
+
             //////////////////////////////////
             /* Convolute inner pixels first */
             //////////////////////////////////
@@ -434,8 +438,6 @@ int main(void){
                     my_image_after[1][j] = 255;
             } // End for
 
-            /* Start receiving neighbours pixels/non-blocking */
-            MPI_Startall(NUM_NEIGHBOURS, recv_requests);
 
             MPI_Status recv_stat;
 
@@ -568,6 +570,10 @@ int main(void){
             /* Start sending my pixels/non-blocking */
             MPI_Startall(NUM_NEIGHBOURS, send_requests);
 
+
+            /* Start receiving neighbours pixels/non-blocking */
+            MPI_Startall(NUM_NEIGHBOURS, recv_requests);
+
             //////////////////////////////////
             /* Convolute inner pixels first */
             //////////////////////////////////
@@ -642,8 +648,6 @@ int main(void){
                     my_image_after[1][j] = 255;
             } // End for
 
-            /* Start receiving neighbours pixels/non-blocking */
-            MPI_Startall(NUM_NEIGHBOURS, recv_requests);
 
             MPI_Status recv_stat;
 
@@ -777,6 +781,10 @@ int main(void){
             /* Start sending my pixels/non-blocking */
             MPI_Startall(NUM_NEIGHBOURS, send_requests);
 
+
+            /* Start receiving neighbours pixels/non-blocking */
+            MPI_Startall(NUM_NEIGHBOURS, recv_requests);
+
             //////////////////////////////////
             /* Convolute inner pixels first */
             //////////////////////////////////
@@ -851,8 +859,6 @@ int main(void){
                     my_image_after[my_height][j] = 255;
             } // End for
 
-            /* Start receiving neighbours pixels/non-blocking */
-            MPI_Startall(NUM_NEIGHBOURS, recv_requests);
 
             MPI_Status recv_stat;
 
@@ -985,6 +991,9 @@ int main(void){
             /* Start sending my pixels/non-blocking */
             MPI_Startall(NUM_NEIGHBOURS, send_requests);
 
+
+            /* Start receiving neighbours pixels/non-blocking */
+            MPI_Startall(NUM_NEIGHBOURS, recv_requests);
             //////////////////////////////////
             /* Convolute inner pixels first */
             //////////////////////////////////
@@ -1059,8 +1068,6 @@ int main(void){
                     my_image_after[my_height][j] = 255;
             } // End for
 
-            /* Start receiving neighbours pixels/non-blocking */
-            MPI_Startall(NUM_NEIGHBOURS, recv_requests);
 
             MPI_Status recv_stat;
 
@@ -1195,6 +1202,8 @@ int main(void){
             /* Start sending my pixels/non-blocking */
             MPI_Startall(NUM_NEIGHBOURS, send_requests);
 
+            /* Start receiving neighbours pixels/non-blocking */
+            MPI_Startall(NUM_NEIGHBOURS, recv_requests);
             //////////////////////////////////
             /* Convolute inner pixels first */
             //////////////////////////////////
@@ -1241,8 +1250,6 @@ int main(void){
                     my_image_after[1][j] = 255;
             } // End for
 
-            /* Start receiving neighbours pixels/non-blocking */
-            MPI_Startall(NUM_NEIGHBOURS, recv_requests);
 
             MPI_Status recv_stat;
 
@@ -1505,6 +1512,9 @@ int main(void){
             /* Start sending my pixels/non-blocking */
             MPI_Startall(NUM_NEIGHBOURS, send_requests);
 
+            /* Start receiving neighbours pixels/non-blocking */
+            MPI_Startall(NUM_NEIGHBOURS, recv_requests);
+
             //////////////////////////////////
             /* Convolute inner pixels first */
             //////////////////////////////////
@@ -1551,8 +1561,7 @@ int main(void){
                     my_image_after[i][my_width] = 255;
             } // End for
 
-            /* Start receiving neighbours pixels/non-blocking */
-            MPI_Startall(NUM_NEIGHBOURS, recv_requests);
+
 
             MPI_Status recv_stat;
 
@@ -1819,6 +1828,13 @@ int main(void){
             /* Start sending my pixels/non-blocking */
             MPI_Startall(NUM_NEIGHBOURS, send_requests);
 
+            /* Start receiving neighbours pixels/non-blocking */
+            MPI_Startall(NUM_NEIGHBOURS, recv_requests);re[i - 1][j + 1] * my_args.filter[0][2] +
+                                            my_image_before[i][j + 1] * my_args.filter[1][2] +
+                                            my_image_before[i + 1][j + 1] * my_args.filter[2][2] +
+                                            my_image_before[i + 1][j] * my_args.filter[2][1] +
+                                            my_image_before[i + 1][j - 1] * my_args.fil
+
             //////////////////////////////////
             /* Convolute inner pixels first */
             //////////////////////////////////
@@ -1865,8 +1881,7 @@ int main(void){
                     my_image_after[my_height][j] = 255;
             } // End for
 
-            /* Start receiving neighbours pixels/non-blocking */
-            MPI_Startall(NUM_NEIGHBOURS, recv_requests);
+
 
             MPI_Status recv_stat;
 
@@ -2134,6 +2149,10 @@ int main(void){
             /* Start sending my pixels/non-blocking */
             MPI_Startall(NUM_NEIGHBOURS, send_requests);
 
+
+            /* Start receiving neighbours pixels/non-blocking */
+            MPI_Startall(NUM_NEIGHBOURS, recv_requests);
+
             //////////////////////////////////
             /* Convolute inner pixels first */
             //////////////////////////////////
@@ -2180,8 +2199,6 @@ int main(void){
                     my_image_after[i][1] = 255;
             } // End for
 
-            /* Start receiving neighbours pixels/non-blocking */
-            MPI_Startall(NUM_NEIGHBOURS, recv_requests);
 
             MPI_Status recv_stat;
 
@@ -2446,6 +2463,9 @@ int main(void){
             /* Start sending my pixels/non-blocking */
             MPI_Startall(NUM_NEIGHBOURS, send_requests);
 
+            /* Start receiving neighbours pixels/non-blocking */
+            MPI_Startall(NUM_NEIGHBOURS, recv_requests);
+
             //////////////////////////////////
             /* Convolute inner pixels first */
             //////////////////////////////////
@@ -2472,8 +2492,7 @@ int main(void){
                 } // End for
             } // End for
 
-            /* Start receiving neighbours pixels/non-blocking */
-            MPI_Startall(NUM_NEIGHBOURS, recv_requests);
+
 
             MPI_Status recv_stat;
 
