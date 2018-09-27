@@ -4,28 +4,43 @@
 A Random image is generated and then convolution is performed with a given filter. Convolution can be performed many times(based in the user-input)  <br /> 
 
 ## How It Works
-A Random image is generated and then convolution is performed with a given filter. Convolution can be performed many times(based in user-input)  <br /> 
+Type of data partition is block, so every process has it's own portion of the original image. In the beginning, all processes convolute <br /> inner pixels. After that processes should exchange their outer pixels via messages and then perform convolution to outer pixels.
+<br /> 
 Notes:
 * Filter = 3 X 3 (can not be changed)
-* Given filter will be normalized
-* All processes are workers. Process 0 just sends user input in the other processes. After that process 0 is a worker. In the end process 0 will print some results
+* Given filter can be normalized
+* All processes are workers. Process 0 just sends the user input in the other processes. After that process 0 is a worker. In the end process 0 will print some results.
 * Timers only includes computation and messages(pre/post-procesing is excluded)
-* Every pixel has 8 heighbours 
+* Max heighbours per proces = 8 
 * Given number of processes must be a perfect square (For image division)
+* In the files _reduce.c every process checks for the convergence of the image. More specifically a generated image can convergence in the <br />
+60 loop out of 100 loops. In this scenario process 0 will print a message and the remaining loops will continue.
 
 ## Requirements
 * MPI-3 <br />
-Instructions: https://www.mpich.org/static/downloads/3.2.1/mpich-3.2.1-userguide.pdf
+* OpenMp <br />
 
 ## Compilation/Run
 1. make
 2. mpiexec -n 4 ./filter <br />
-Note: Run make file inside src folder  
+Note: Run make file inside folders  
+
+## Features
+* Persistent Communication
+* Virtual Topology - Cartesian 
+* Derived Data Types - Vector, Struct, Contiguous
+* Non - Blocking Communication
+* Dynamic Receiving - MPI_Status, MPI_Waitany, use of MPI_PROC_NULL 
+
+## Contributing
+* Read a real image from a file using parallel I/O -> The user will enter the image src, the filter and the number of iterations
 
 ## Helpful Links: 
 1. http://matlabtricks.com/post-5/3x3-convolution-kernels-with-online-demo
 2. http://setosa.io/ev/image-kernels/
 3. https://lodev.org/cgtutor/filtering.html
+4. https://www.openmp.org/
+5. https://www.mpich.org/static/downloads/3.2.1/mpich-3.2.1-userguide.pdf
 
 ## Authors
 * Petropoulakis Panagiotis petropoulakispanagiotis@gmail.com
