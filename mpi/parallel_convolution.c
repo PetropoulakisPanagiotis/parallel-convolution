@@ -39,8 +39,8 @@ int main(void){
             printf("Invalid number of processes given. Must be a perfect square: 4, 9, 16,...\n");
             MPI_Abort(MPI_COMM_WORLD, -1);
         }
-        if(comm_size == 1 || comm_size <= 0 || comm_size > PROCESSES_LIMIT){
-            printf("Invalid number of processes given. Must be a positive heigher than 1 and less that %d\n",PROCESSES_LIMIT);
+        if(comm_size <= 0 || comm_size > PROCESSES_LIMIT){
+            printf("Invalid number of processes given. Must be a positive heigher than 0 and less that %d\n",PROCESSES_LIMIT);
             MPI_Abort(MPI_COMM_WORLD, -1);
         }
     }
@@ -351,8 +351,64 @@ int main(void){
     MPI_Barrier(my_cartesian_comm);
     double start = MPI_Wtime(); // Get start time before iterations
 
+    /* Only one process */
+    if(comm_size == 1){
+
+        /* Perform convolution */
+        for(iter = 0; iter < my_args.iterations; iter++){
+
+            //////////////////////////////////
+            /* Convolute inner pixels first */
+            //////////////////////////////////
+
+            for(i = 1; i < my_height_incr_1; i++){ // For every inner row
+                for(j = 1; j < my_width_incr_1; j++){ // and every inner column
+
+                    /* Compute the new value of the current pixel */
+                    my_image_after[i][j] = (int)(my_image_before[i][j] * my_args.filter[1][1] +
+                                            my_image_before[i - 1][j] * my_args.filter[0][1] +
+                                            my_image_before[i - 1][j + 1] * my_args.filter[0][2] +
+                                            my_image_before[i][j + 1] * my_args.filter[1][2] +
+                                            my_image_before[i + 1][j + 1] * my_args.filter[2][2] +
+                                            my_image_before[i + 1][j] * my_args.filter[2][1] +
+                                            my_image_before[i + 1][j - 1] * my_args.filter[2][0] +
+                                            my_image_before[i][j - 1] * my_args.filter[1][0] +
+                                            my_image_before[i - 1][j - 1] * my_args.filter[0][0]);
+
+                    /* Truncated unexpected values */
+                    if(my_image_after[i][j] < 0)
+                        my_image_after[i][j] = 0;
+                    else if(my_image_after[i][j] > 255)
+                        my_image_after[i][j] = 255;
+                } // End for
+            } // End for
+
+            /* In the next loop perform convolution to the new image  - swapp images */
+            tmp_ptr = my_image_before[0];
+
+            my_image_before[0] = my_image_after[0];
+            for(i = 1; i < my_height_incr_2; i++)
+                my_image_before[i] = &(my_image_before[0][i*(my_width_incr_2)]);
+
+            my_image_after[0] = tmp_ptr;
+            for(i = 1; i < my_height_incr_2; i++)
+                my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
+        } // End of iter
+        
+        // char fileName[10]="";
+        // sprintf(fileName,"File%dB",my_rank);
+        // FILE* my_file = fopen(fileName, "w");
+        //
+        // for(i = 0; i < my_height_incr_2; i++){
+        //     for(j = 0; j < my_width_incr_2; j++){
+        //         fprintf(my_file, "%d\t", my_image_after[i][j]);
+        //     }
+        //     fprintf(my_file, "\n");
+        // }
+        // fclose(my_file);
+    } // End if one process
     /* Left upper process - active neighbours E, SE, S */
-    if(my_rank == 0){
+    else if(my_rank == 0){
 
         /* Perform convolution */
         for(iter = 0; iter < my_args.iterations; iter++){
@@ -392,7 +448,7 @@ int main(void){
 
             /* Left column - except upper and lower left corners */
             for(i = 2; i < my_height; i++){
-                my_image_after[i][1] = (int)(my_image_before[i][1] * my_args.filter[1][1] +
+                my_image_after[i][1] = (int)(4 * my_image_before[i][1] * my_args.filter[1][1] +
                                         my_image_before[i - 1][1] * my_args.filter[0][1] +
                                         my_image_before[i - 1][2] * my_args.filter[0][2] +
                                         my_image_before[i][2] * my_args.filter[1][2] +
@@ -407,7 +463,7 @@ int main(void){
             } // End for
 
             /* Left upper corner */
-            my_image_after[1][1] = (int)(my_image_before[1][1] * my_args.filter[1][1] +
+            my_image_after[1][1] = (int)(6 * my_image_before[1][1] * my_args.filter[1][1] +
                                     my_image_before[1][2] * my_args.filter[1][2] +
                                     my_image_before[2][2] * my_args.filter[2][2] +
                                     my_image_before[2][1] * my_args.filter[2][1]);
@@ -420,7 +476,7 @@ int main(void){
 
             /* First line - except left and right upper corners */
             for(j = 2; j < my_width; j++){
-                my_image_after[1][j] = (int)(my_image_before[1][j] * my_args.filter[1][1] +
+                my_image_after[1][j] = (int)(4 *my_image_before[1][j] * my_args.filter[1][1] +
                                         my_image_before[1][j + 1] * my_args.filter[1][2] +
                                         my_image_before[2][j + 1] * my_args.filter[2][2] +
                                         my_image_before[2][j] * my_args.filter[2][1] +
@@ -465,7 +521,7 @@ int main(void){
                     } // End for
 
                     /* Right upper corner */
-                    my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
+                    my_image_after[1][my_width] = (int)(4 * my_image_before[1][my_width] * my_args.filter[1][1] +
                                                     my_image_before[1][my_width_incr_1] * my_args.filter[1][2] +
                                                     my_image_before[2][my_width_incr_1] * my_args.filter[2][2] +
                                                     my_image_before[2][my_width] * my_args.filter[2][1] +
@@ -500,7 +556,7 @@ int main(void){
                     } // End for
 
                     /* Left lower corner */
-                    my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
+                    my_image_after[my_height][1] = (int)(4 * my_image_before[my_height][1] * my_args.filter[1][1] +
                                                     my_image_before[my_height_decr_1][1] * my_args.filter[0][1] +
                                                     my_image_before[my_height_decr_1][2] * my_args.filter[0][2] +
                                                     my_image_before[my_height][2] * my_args.filter[1][2] +
@@ -600,7 +656,7 @@ int main(void){
 
             /* Right column - except from upper and lower right corners */
             for(i = 2; i < my_height; i++){
-                my_image_after[i][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
+                my_image_after[i][my_width] = (int)(4 * my_image_before[i][my_width] * my_args.filter[1][1] +
                                                 my_image_before[i - 1][my_width] * my_args.filter[0][1] +
                                                 my_image_before[i + 1][my_width] * my_args.filter[2][1] +
                                                 my_image_before[i + 1][my_width_decr_1] * my_args.filter[2][0] +
@@ -615,7 +671,7 @@ int main(void){
             } // End for
 
             /* Right upper corner */
-            my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
+            my_image_after[1][my_width] = (int)(6 * my_image_before[1][my_width] * my_args.filter[1][1] +
                                             my_image_before[2][my_width] * my_args.filter[2][1] +
                                             my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
                                             my_image_before[1][my_width_decr_1] * my_args.filter[1][0]);
@@ -628,7 +684,7 @@ int main(void){
 
             /* First line - except left and right upper corners */
             for(j = 2; j < my_width; j++){
-                my_image_after[1][j] = (int)(my_image_before[1][j] * my_args.filter[1][1] +
+                my_image_after[1][j] = (int)(4 * my_image_before[1][j] * my_args.filter[1][1] +
                                         my_image_before[1][j + 1] * my_args.filter[1][2] +
                                         my_image_before[2][j + 1] * my_args.filter[2][2] +
                                         my_image_before[2][j] * my_args.filter[2][1] +
@@ -673,7 +729,7 @@ int main(void){
                     } // End for
 
                     /* Left upper corner */
-                    my_image_after[1][1] = (int)(my_image_before[1][1] * my_args.filter[1][1] +
+                    my_image_after[1][1] = (int)(4 * my_image_before[1][1] * my_args.filter[1][1] +
                                             my_image_before[1][2] * my_args.filter[1][2] +
                                             my_image_before[2][2] * my_args.filter[2][2] +
                                             my_image_before[2][1] * my_args.filter[2][1] +
@@ -708,7 +764,7 @@ int main(void){
                     } // End for
 
                     /* Right lower corner */
-                    my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
+                    my_image_after[my_height][my_width] = (int)(4 * my_image_before[my_height][my_width] * my_args.filter[1][1] +
                                                             my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
                                                             my_image_before[my_height_incr_1][my_width] * my_args.filter[2][1] +
                                                             my_image_before[my_height_incr_1][my_width_decr_1] * my_args.filter[2][0] +
@@ -809,7 +865,7 @@ int main(void){
 
             /* Right column - except from upper and lower right corners */
             for(i = 2; i < my_height; i++){
-                my_image_after[i][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
+                my_image_after[i][my_width] = (int)(4 * my_image_before[i][my_width] * my_args.filter[1][1] +
                                                 my_image_before[i - 1][my_width] * my_args.filter[0][1] +
                                                 my_image_before[i + 1][my_width] * my_args.filter[2][1] +
                                                 my_image_before[i + 1][my_width_decr_1] * my_args.filter[2][0] +
@@ -824,7 +880,7 @@ int main(void){
             } // End for
 
             /* Right lower corner */
-            my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
+            my_image_after[my_height][my_width] = (int)(6 * my_image_before[my_height][my_width] * my_args.filter[1][1] +
                                                     my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
                                                     my_image_before[my_height][my_width_decr_1] * my_args.filter[1][0] +
                                                     my_image_before[my_height_decr_1][my_width_decr_1] * my_args.filter[0][0]);
@@ -837,7 +893,7 @@ int main(void){
 
             /* Last line - except from left and right lower corners */
             for(j = 2; j < my_width; j++){
-                my_image_after[my_height][j] = (int)(my_image_before[my_height][j] * my_args.filter[1][1] +
+                my_image_after[my_height][j] = (int)(4 * my_image_before[my_height][j] * my_args.filter[1][1] +
                                                 my_image_before[my_height_decr_1][j] * my_args.filter[0][1] +
                                                 my_image_before[my_height_decr_1][j + 1] * my_args.filter[0][2] +
                                                 my_image_before[my_height][j + 1] * my_args.filter[1][2] +
@@ -882,7 +938,7 @@ int main(void){
                     } // End for
 
                     /* Left lower corner */
-                    my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
+                    my_image_after[my_height][1] = (int)(4 * my_image_before[my_height][1] * my_args.filter[1][1] +
                                                     my_image_before[my_height_decr_1][1] * my_args.filter[0][1] +
                                                     my_image_before[my_height_decr_1][2] * my_args.filter[0][2] +
                                                     my_image_before[my_height][2] * my_args.filter[1][2] +
@@ -917,12 +973,13 @@ int main(void){
                     } // End for
 
                     /* Right upper corner */
-                    my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
+                    my_image_after[1][my_width] = (int)(4 * my_image_before[1][my_width] * my_args.filter[1][1] +
                                                     my_image_before[0][my_width] * my_args.filter[0][1] +
                                                     my_image_before[2][my_width] * my_args.filter[2][1] +
                                                     my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
                                                     my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
                                                     my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
+                    
                     /* Truncated unexpected values */
                     if(my_image_after[1][my_width] < 0)
                         my_image_after[1][my_width] = 0;
@@ -1017,7 +1074,7 @@ int main(void){
 
             /* Left column - except upper and lower left corners */
             for(i = 2; i < my_height; i++){
-                my_image_after[i][1] = (int)(my_image_before[i][1] * my_args.filter[1][1] +
+                my_image_after[i][1] = (int)(4 * my_image_before[i][1] * my_args.filter[1][1] +
                                         my_image_before[i - 1][1] * my_args.filter[0][1] +
                                         my_image_before[i - 1][2] * my_args.filter[0][2] +
                                         my_image_before[i][2] * my_args.filter[1][2] +
@@ -1032,7 +1089,7 @@ int main(void){
             } // End for
 
             /* Left lower corner */
-            my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
+            my_image_after[my_height][1] = (int)(6 * my_image_before[my_height][1] * my_args.filter[1][1] +
                                             my_image_before[my_height_decr_1][1] * my_args.filter[0][1] +
                                             my_image_before[my_height_decr_1][2] * my_args.filter[0][2] +
                                             my_image_before[my_height][2] * my_args.filter[1][2]);
@@ -1045,7 +1102,7 @@ int main(void){
 
             /* Last line - except from left and right lower corners */
             for(j = 2; j < my_width; j++){
-                my_image_after[my_height][j] = (int)(my_image_before[my_height][j] * my_args.filter[1][1] +
+                my_image_after[my_height][j] = (int)(4 * my_image_before[my_height][j] * my_args.filter[1][1] +
                                                 my_image_before[my_height_decr_1][j] * my_args.filter[0][1] +
                                                 my_image_before[my_height_decr_1][j + 1] * my_args.filter[0][2] +
                                                 my_image_before[my_height][j + 1] * my_args.filter[1][2] +
@@ -1090,7 +1147,7 @@ int main(void){
                     } // End for
 
                     /* Right lower corner */
-                    my_image_after[my_height][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
+                    my_image_after[my_height][my_width] = (int)(4 * my_image_before[i][my_width] * my_args.filter[1][1] +
                                                         my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
                                                         my_image_before[my_height_decr_1][my_width_incr_1] * my_args.filter[0][2] +
                                                         my_image_before[my_height][my_width_incr_1] * my_args.filter[1][2] +
@@ -1125,7 +1182,7 @@ int main(void){
                     } // End for
 
                     /* Left upper corner */
-                    my_image_after[1][1] = (int)(my_image_before[1][1] * my_args.filter[1][1] +
+                    my_image_after[1][1] = (int)(4 * my_image_before[1][1] * my_args.filter[1][1] +
                                             my_image_before[0][1] * my_args.filter[0][1] +
                                             my_image_before[0][2] * my_args.filter[0][2] +
                                             my_image_before[1][2] * my_args.filter[1][2] +
@@ -1227,7 +1284,7 @@ int main(void){
 
             /* First line - except left and right upper corners */
             for(j = 2; j < my_width; j++){
-                my_image_after[1][j] = (int)(my_image_before[1][j] * my_args.filter[1][1] +
+                my_image_after[1][j] = (int)(4 * my_image_before[1][j] * my_args.filter[1][1] +
                                         my_image_before[1][j + 1] * my_args.filter[1][2] +
                                         my_image_before[2][j + 1] * my_args.filter[2][2] +
                                         my_image_before[2][j] * my_args.filter[2][1] +
@@ -1274,7 +1331,7 @@ int main(void){
                     } // End for
 
                     /* Right upper corner */
-                    my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
+                    my_image_after[1][my_width] = (int)(4 * my_image_before[1][my_width] * my_args.filter[1][1] +
                                                     my_image_before[1][my_width_incr_1] * my_args.filter[1][2] +
                                                     my_image_before[2][my_width_incr_1] * my_args.filter[2][2] +
                                                     my_image_before[2][my_width] * my_args.filter[2][1] +
@@ -1434,7 +1491,7 @@ int main(void){
                     } // End for
 
                     /* Left upper corner */
-                    my_image_after[1][1] = (int)(my_image_before[1][1] * my_args.filter[1][1] +
+                    my_image_after[1][1] = (int)(4 * my_image_before[1][1] * my_args.filter[1][1] +
                                             my_image_before[1][2] * my_args.filter[1][2] +
                                             my_image_before[2][2] * my_args.filter[2][2] +
                                             my_image_before[2][1] * my_args.filter[2][1] +
@@ -1537,7 +1594,7 @@ int main(void){
 
             /* Right column - except from upper and lower right corners */
             for(i = 2; i < my_height; i++){
-                my_image_after[i][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
+                my_image_after[i][my_width] = (int)(4 * my_image_before[i][my_width] * my_args.filter[1][1] +
                                                 my_image_before[i - 1][my_width] * my_args.filter[0][1] +
                                                 my_image_before[i + 1][my_width] * my_args.filter[2][1] +
                                                 my_image_before[i + 1][my_width_decr_1] * my_args.filter[2][0] +
@@ -1584,7 +1641,7 @@ int main(void){
                     } // End for
 
                     /* Right upper corner */
-                    my_image_after[1][my_width] = (int)(my_image_before[1][my_width] * my_args.filter[1][1] +
+                    my_image_after[1][my_width] = (int)(4 * my_image_before[1][my_width] * my_args.filter[1][1] +
                                                     my_image_before[0][my_width] * my_args.filter[0][1] +
                                                     my_image_before[2][my_width] * my_args.filter[2][1] +
                                                     my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
@@ -1639,7 +1696,7 @@ int main(void){
                     } // End for
 
                     /* Right lower corner */
-                    my_image_after[my_height][my_width] = (int)(my_image_before[my_height][my_width] * my_args.filter[1][1] +
+                    my_image_after[my_height][my_width] = (int)(4 * my_image_before[my_height][my_width] * my_args.filter[1][1] +
                                                             my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
                                                             my_image_before[my_height_incr_1][my_width] * my_args.filter[2][1] +
                                                             my_image_before[my_height_incr_1][my_width_decr_1] * my_args.filter[2][0] +
@@ -1851,7 +1908,7 @@ int main(void){
 
             /* Last line - except from left and right lower corners */
             for(j = 2; j < my_width; j++){
-                my_image_after[my_height][j] = (int)(my_image_before[my_height][j] * my_args.filter[1][1] +
+                my_image_after[my_height][j] = (int)(4 * my_image_before[my_height][j] * my_args.filter[1][1] +
                                                 my_image_before[my_height_decr_1][j] * my_args.filter[0][1] +
                                                 my_image_before[my_height_decr_1][j + 1] * my_args.filter[0][2] +
                                                 my_image_before[my_height][j + 1] * my_args.filter[1][2] +
@@ -1983,7 +2040,7 @@ int main(void){
                     } // End for
 
                     /* Right lower corner */
-                    my_image_after[my_height][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
+                    my_image_after[my_height][my_width] = (int)(4 * my_image_before[i][my_width] * my_args.filter[1][1] +
                                                         my_image_before[my_height_decr_1][my_width] * my_args.filter[0][1] +
                                                         my_image_before[my_height_decr_1][my_width_incr_1] * my_args.filter[0][2] +
                                                         my_image_before[my_height][my_width_incr_1] * my_args.filter[1][2] +
@@ -2039,7 +2096,7 @@ int main(void){
                     } // End for
 
                     /* Left lower corner */
-                    my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
+                    my_image_after[my_height][1] = (int)(4 * my_image_before[my_height][1] * my_args.filter[1][1] +
                                                     my_image_before[my_height_decr_1][1] * my_args.filter[0][1] +
                                                     my_image_before[my_height_decr_1][2] * my_args.filter[0][2] +
                                                     my_image_before[my_height][2] * my_args.filter[1][2] +
@@ -2166,7 +2223,7 @@ int main(void){
 
             /* Left column - except upper and lower left corners */
             for(i = 2; i < my_height; i++){
-                my_image_after[i][1] = (int)(my_image_before[i][1] * my_args.filter[1][1] +
+                my_image_after[i][1] = (int)(4 * my_image_before[i][1] * my_args.filter[1][1] +
                                         my_image_before[i - 1][1] * my_args.filter[0][1] +
                                         my_image_before[i - 1][2] * my_args.filter[0][2] +
                                         my_image_before[i][2] * my_args.filter[1][2] +
@@ -2213,7 +2270,7 @@ int main(void){
                     } // End for
 
                     /* Left upper corner */
-                    my_image_after[1][1] = (int)(my_image_before[1][1] * my_args.filter[1][1] +
+                    my_image_after[1][1] = (int)(4 * my_image_before[1][1] * my_args.filter[1][1] +
                                             my_image_before[0][1] * my_args.filter[0][1] +
                                             my_image_before[0][2] * my_args.filter[0][2] +
                                             my_image_before[1][2] * my_args.filter[1][2] +
@@ -2375,7 +2432,7 @@ int main(void){
                     } // End for
 
                     /* Left lower corner */
-                    my_image_after[my_height][1] = (int)(my_image_before[my_height][1] * my_args.filter[1][1] +
+                    my_image_after[my_height][1] = (int)(4 * my_image_before[my_height][1] * my_args.filter[1][1] +
                                                     my_image_before[my_height_decr_1][1] * my_args.filter[0][1] +
                                                     my_image_before[my_height_decr_1][2] * my_args.filter[0][2] +
                                                     my_image_before[my_height][2] * my_args.filter[1][2] +
@@ -2847,17 +2904,22 @@ int main(void){
         // fclose(my_file);
     } // End else i)
 
+    /* Get time to calculate run time */
     double end = MPI_Wtime();
     double time_elapsed = end - start;
     printf("[%d] My time is %lf\n", my_rank, time_elapsed);
 
     double max_time;
-    MPI_Reduce(&time_elapsed, &max_time, 1, MPI_DOUBLE, MPI_MAX, 0, my_cartesian_comm);
-
+    
+    /* Print max run-time in parallel section */
+    if(comm_size != 1)
+        MPI_Reduce(&time_elapsed, &max_time, 1, MPI_DOUBLE, MPI_MAX, 0, my_cartesian_comm);
+    else
+        max_time = time_elapsed;
+    
     if(my_rank == 0){
         printf("\n[Parallel Convolution Completed]:\nType of Image: %d\nResolution: %d x %d\nSeed Given: %d\nNumber of Iterations: %d\nNumber of Processes: %d\nCompleted in: %.3lf seconds\n",
-                  my_args.image_type, my_args.image_width, my_args.image_height, my_args.image_seed,
-                  my_args.iterations, comm_size, max_time);
+            my_args.image_type, my_args.image_width, my_args.image_height, my_args.image_seed, my_args.iterations, comm_size, max_time);
     }
 
     /* Free memory */
