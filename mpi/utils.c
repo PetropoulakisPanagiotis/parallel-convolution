@@ -54,7 +54,7 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
         num = strtok(line, " \n\t"); // Get first number
 
         if(num == NULL){
-            printf("No values given. Give line again\n");
+           printf("No values given. Give line again\n");
             i--;
             continue;
         }

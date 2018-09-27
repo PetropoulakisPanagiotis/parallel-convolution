@@ -358,7 +358,7 @@ int main(void){
         for(iter = 0; iter < my_args.iterations; iter++){
 
             /* Start sending my pixels/non-blocking */
-            // MPI_Startall(NUM_NEIGHBOURS, send_requests);
+            MPI_Startall(NUM_NEIGHBOURS, send_requests);
 
             //////////////////////////////////
             /* Convolute inner pixels first */
@@ -2859,8 +2859,6 @@ int main(void){
                   my_args.image_type, my_args.image_width, my_args.image_height, my_args.image_seed,
                   my_args.iterations, comm_size, max_time);
     }
-
-    // printf("[%d] My time is %lf\n", my_rank, end - start);
 
     /* Free memory */
     free(my_image_before[0]);
