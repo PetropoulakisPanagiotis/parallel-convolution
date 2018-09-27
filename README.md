@@ -16,6 +16,13 @@ Notes:
 * In the files _reduce.c every process checks for the convergence of the image. More specifically a generated image can convergence in the <br />
 60 loop out of 100 loops. In this scenario process 0 will print a message and the remaining loops will continue.
 
+## Features
+* Persistent Communication
+* Virtual Topology - Cartesian 
+* Derived Data Types - Vector, Struct, Contiguous
+* Non - Blocking Communication
+* Dynamic Receiving - MPI_Status, MPI_Waitany, use of MPI_PROC_NULL 
+
 ## Requirements
 * MPI-3 <br />
 * OpenMp <br />
@@ -24,13 +31,6 @@ Notes:
 1. make
 2. mpiexec -n 4 ./filter <br />
 Note: Run make file inside folders  
-
-## Features
-* Persistent Communication
-* Virtual Topology - Cartesian 
-* Derived Data Types - Vector, Struct, Contiguous
-* Non - Blocking Communication
-* Dynamic Receiving - MPI_Status, MPI_Waitany, use of MPI_PROC_NULL 
 
 ## Contributing
 * Introduce parallel I/O: Handle a real image <br />
