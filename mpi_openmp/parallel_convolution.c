@@ -154,12 +154,12 @@ int main(void){
     */
     int column_id = my_rank / procs_per_line;
 
+    /* Find neighbours */
+    MPI_Cart_shift(my_cartesian_comm, 0, 1, &neighbours[N], &neighbours[S]);
+    MPI_Cart_shift(my_cartesian_comm, 1, 1, &neighbours[W], &neighbours[E]);
+   
+    /* Find corner neighbours */
 
-    /* [N]North Neighbour (0) */
-    if(column_id != 0) // If not on top of image
-        neighbours[N] = my_rank - procs_per_line;
-    else
-        neighbours[N] = MPI_PROC_NULL; // No neighbour from North
 
     /* [NE]North-East Neighbour (1) */
     if(column_id != 0 && row_id != procs_per_line - 1) // If not on right up corner
@@ -167,35 +167,17 @@ int main(void){
     else
         neighbours[NE] = MPI_PROC_NULL;
 
-    /* [E]East Neighbour (2) */
-    if(row_id != procs_per_line - 1) // If not on the right edge
-        neighbours[E] = my_rank + 1;
-    else
-        neighbours[E] = MPI_PROC_NULL;
-
     /* [SE]South-East Neighbour (3) */
     if(column_id != procs_per_line - 1 && row_id != procs_per_line - 1) // If not on the right down corner
         neighbours[SE] = my_rank + procs_per_line + 1;
     else
         neighbours[SE] = MPI_PROC_NULL;
 
-    /* [S]South Neighbour (4) */
-    if(column_id != procs_per_line - 1) // If not on bottom of image
-        neighbours[S] = my_rank + procs_per_line;
-    else
-        neighbours[S] = MPI_PROC_NULL; // No neighbour from South
-
     /* [SW]South-West Neighbour (5) */
     if(column_id != procs_per_line -1 && row_id != 0) // If not on left down corner
         neighbours[SW] = my_rank + procs_per_line - 1;
     else
         neighbours[SW] = MPI_PROC_NULL;
-
-    /* [W]West Neighbour (6) */
-    if(row_id != 0) // If not on the left edge
-        neighbours[W] = my_rank - 1;
-    else
-        neighbours[W] = MPI_PROC_NULL;
 
     /* [NW]North-West Neighbour (7) */
     if(row_id != 0 && column_id != 0) // If not on left up corner
