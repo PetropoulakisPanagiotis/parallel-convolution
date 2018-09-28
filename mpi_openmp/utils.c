@@ -30,7 +30,7 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
     size_t buff_size = 50; // Initial buffer size
     int total_sum = 0, line_sum; // Sum of filter values(for normalization) - Sum per line
     int i, j, error;
-    
+
 
     /* Allocate memory for line buffer */
     line = malloc(sizeof(char) * buff_size);
@@ -51,7 +51,13 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
         }
 
 		line = strtok(line, "\n"); // Discard \n
-		num = strtok(line, " \n\t"); // Get first number
+        num = strtok(line, " \n\t"); // Get first number
+
+        if(num == NULL){
+           printf("No values given. Give line again\n");
+            i--;
+            continue;
+        }
 
         j = 0; /* Count number of integers scanned from input */
 
@@ -63,7 +69,7 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
                 filter[i][j] = 0;
             else{
                 filter[i][j] = (double)atoi(num);
-                
+
                 /* Atoi error */
                 if(filter[i][j] == 0){
                     printf("An error occured. Try again later - read_filter(atoi)");
@@ -77,7 +83,7 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
 
             line_sum += (int)filter[i][j];
 
-			num = strtok(NULL," \n\t"); // Get the next number 
+			num = strtok(NULL," \n\t"); // Get the next number
 			if(num == NULL)
 				break;
 
@@ -92,13 +98,13 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
         else
             total_sum += line_sum; // Line was valid, add it in total sum
 	} // End for
-    
+
     /* Normalize or not the filter */
     printf("If you want to normalize filter press y otherwise n:");
 
     /*  Read input */
     while(1){
-	    
+
         error = getline(&line, &buff_size, stdin);
         if(error == -1){
             printf("An error occured. Try again later - read_filter(getline_2)");
@@ -112,7 +118,7 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
         else
             break;
     } // End while
-    
+
 
     /* Normalize filter */
     if(!strcmp(normalize, "y") || !strcmp(normalize, "yes")){
@@ -180,7 +186,7 @@ int read_user_input(Args_type* args, int procs_per_line){
                 printf("Enter the number of iterations:");
                 break;
         } // End switch
-        
+
         stop = 0;
 
         /* Check imput */
@@ -203,7 +209,7 @@ int read_user_input(Args_type* args, int procs_per_line){
             /* Remove \n */
             buff[strlen(buff) - 1] = 0;
 
-            errno = 0; //reset errno before call 
+            errno = 0; //reset errno before call
 
             /* Convert line to integer */
             input = strtol(buff, &end, 10);

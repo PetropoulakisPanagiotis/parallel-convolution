@@ -394,7 +394,7 @@ int main(void){
             for(i = 1; i < my_height_incr_2; i++)
                 my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
         } // End of iter
-        
+
         // char fileName[10]="";
         // sprintf(fileName,"File%dB",my_rank);
         // FILE* my_file = fopen(fileName, "w");
@@ -985,7 +985,7 @@ int main(void){
                                                     my_image_before[2][my_width_decr_1] * my_args.filter[2][0] +
                                                     my_image_before[1][my_width_decr_1] * my_args.filter[1][0] +
                                                     my_image_before[0][my_width_decr_1] * my_args.filter[0][0]);
-                    
+
                     /* Truncated unexpected values */
                     if(my_image_after[1][my_width] < 0)
                         my_image_after[1][my_width] = 0;
@@ -1886,11 +1886,7 @@ int main(void){
             MPI_Startall(NUM_NEIGHBOURS, send_requests);
 
             /* Start receiving neighbours pixels/non-blocking */
-            MPI_Startall(NUM_NEIGHBOURS, recv_requests);re[i - 1][j + 1] * my_args.filter[0][2] +
-                                            my_image_before[i][j + 1] * my_args.filter[1][2] +
-                                            my_image_before[i + 1][j + 1] * my_args.filter[2][2] +
-                                            my_image_before[i + 1][j] * my_args.filter[2][1] +
-                                            my_image_before[i + 1][j - 1] * my_args.fil
+            MPI_Startall(NUM_NEIGHBOURS, recv_requests);
 
             //////////////////////////////////
             /* Convolute inner pixels first */
@@ -2929,13 +2925,13 @@ int main(void){
     printf("[%d] My time is %lf\n", my_rank, time_elapsed);
 
     double max_time;
-    
+
     /* Print max run-time in parallel section */
     if(comm_size != 1)
         MPI_Reduce(&time_elapsed, &max_time, 1, MPI_DOUBLE, MPI_MAX, 0, my_cartesian_comm);
     else
         max_time = time_elapsed;
-    
+
     if(my_rank == 0){
         printf("\n[Parallel Convolution Completed]:\nType of Image: %d\nResolution: %d x %d\nSeed Given: %d\nNumber of Iterations: %d\nNumber of Processes: %d\nCompleted in: %.3lf seconds\n",
             my_args.image_type, my_args.image_width, my_args.image_height, my_args.image_seed, my_args.iterations, comm_size, max_time);

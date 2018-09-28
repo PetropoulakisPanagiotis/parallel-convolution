@@ -1,5 +1,5 @@
 CC = mpicc
-CFLAGS = -g -Wall
+CFLAGS = -g -Wall -fopenmp
 LM = -lm
 OBJECTS = parallel_convolution.o utils.o
 EX = filter
