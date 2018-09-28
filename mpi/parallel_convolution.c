@@ -212,18 +212,33 @@ int main(void){
         my_height = my_args.height_per_process;
 
     /* Fix frequent sums into new variables(height and width of image including hallow points etc) */
-    my_width_incr_1 = my_width + 1;
-    my_height_incr_1 = my_height + 1;
+    
+    /* Black and white image */
+    if(my_args.image_type = 0){
+        my_width_incr_1 = my_width + 1;
+        my_height_incr_1 = my_height + 1;
 
-    my_width_incr_2 = my_width_incr_1 + 1;
-    my_height_incr_2 = my_height_incr_1 + 1;
+        my_width_incr_2 = my_width_incr_1 + 1;
+        my_height_incr_2 = my_height_incr_1 + 1;
 
-    my_width_decr_1 = my_width - 1;
-    my_height_decr_1 = my_height - 1;
+        my_width_decr_1 = my_width - 1;
+        my_height_decr_1 = my_height - 1;
+    }
+    /* RGB */
+    else{
+        my_width *= 3;
+        my_width_incr_1 = my_width + 3;
+        my_height_incr_1 = my_height + 3;
+
+        my_width_incr_2 = my_width_incr_1 + 3;
+        my_height_incr_2 = my_height_incr_1 + 3;
+
+        my_width_decr_1 = my_width - 3;
+        my_height_decr_1 = my_height - 3;
+    }
 
     /* For random images, set the seed differently to each process, in order */
     /* to have a fully random image and not repetitive cells                 */
-
     srand(my_args.image_seed * ((my_rank + 333) * (my_rank + 333)));
 
     /* Create array that will hold all pixels and generate a random image           */
@@ -295,7 +310,11 @@ int main(void){
 
     /* Set columns type for sending columns East and West */
     MPI_Datatype column_type;
-    MPI_Type_vector(my_height, 1, my_width_incr_2, MPI_INT, &column_type);
+    if(my_args.type == 0)
+        MPI_Type_vector(my_height, 1, my_width_incr_2, MPI_INT, &column_type);
+    else
+        MPI_Type_vector(my_height, 3, my_width_incr_2, MPI_INT, &column_type);
+    
     MPI_Type_commit(&column_type);
 
     /* Initialize communication with neighbours */
@@ -349,7 +368,7 @@ int main(void){
 
         for(i = 2; i < my_height; i++){ // For every inner row
             for(j = 2; j < my_width; j++){ // and every inner column
-
+ 
                 /* Compute the new value of the current pixel */
                 my_image_after[i][j] = (int)(my_image_before[i][j] * my_args.filter[1][1] +
                                         my_image_before[i - 1][j] * my_args.filter[0][1] +

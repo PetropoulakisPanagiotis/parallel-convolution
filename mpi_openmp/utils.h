@@ -21,6 +21,7 @@
 #define FILTER_MIN_VALUE -10
 #define MAX_ITERATIONS 200 
 #define PROCESSES_LIMIT 100
+#define NUM_THREADS 4 // Number of threads
 
 /* Neighbours - Mapping(nort, east, etc.) */
 #define NUM_NEIGHBOURS 8

@@ -24,7 +24,7 @@ int main(void){
     MPI_Status recv_stat; // For communication
     Args_type my_args; // Arguments of current process
     int comm_size, my_rank, error;
-    int i, j, k, iter, index, ntrs = 4;
+    int i, j, k, iter, index;
 
     /* Initialize MPI environment - Get number of processes and rank. */
     MPI_Init(NULL, NULL);
@@ -349,7 +349,7 @@ int main(void){
         //////////////////////////////////
 
         /* Use 2 threads for the 2 nested fors */
-        # pragma omp parallel for num_threads(ntrs) collapse(2) schedule(static, my_width)
+        # pragma omp parallel for num_threads(NUM_THREADS) collapse(2) schedule(static, my_width)
         for(i = 2; i < my_height; i++){ // For every inner row
             for(j = 2; j < my_width; j++){ // and every inner column
 
