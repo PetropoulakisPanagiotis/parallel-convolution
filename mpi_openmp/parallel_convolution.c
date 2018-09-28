@@ -2959,6 +2959,8 @@ int main(void){
     MPI_Type_free(&args_type);
     MPI_Type_free(&column_type);
 
+    MPI_Comm_free(&my_cartesian_comm);
+    
     /* Terminate MPI execution */
     MPI_Finalize();
 
