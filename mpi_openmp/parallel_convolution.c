@@ -427,6 +427,8 @@ int main(void){
             /* Convolute inner pixels first */
             //////////////////////////////////
 
+            /* Use 2 threads for the 2 nested fors */
+            # pragma omp parallel for num_threads(ntrs) collapse(2)
             for(i = 2; i < my_height; i++){ // For every inner row
                 for(j = 2; j < my_width; j++){ // and every inner column
 
@@ -636,6 +638,7 @@ int main(void){
             //////////////////////////////////
             /* Convolute inner pixels first */
             //////////////////////////////////
+            
             /* Use 2 threads for the 2 nested fors */
             # pragma omp parallel for num_threads(ntrs) collapse(2)
             for(i = 2; i < my_height; i++){ // For every inner row
