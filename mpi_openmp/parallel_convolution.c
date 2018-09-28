@@ -345,7 +345,7 @@ int main(void){
             //////////////////////////////////
 
             /* Use 2 threads for the 2 nested fors */
-            # pragma omp parallel for num_threads(ntrs) collapse(2)
+            # pragma omp parallel for num_threads(ntrs) collapse(2) schedule(static, my_width)
             for(i = 1; i < my_height_incr_1; i++){ // For every inner row
                 for(j = 1; j < my_width_incr_1; j++){ // and every inner column
 
@@ -410,7 +410,7 @@ int main(void){
             //////////////////////////////////
 
             /* Use 2 threads for the 2 nested fors */
-            # pragma omp parallel for num_threads(ntrs) collapse(2)
+            # pragma omp parallel for num_threads(ntrs) collapse(2) schedule(static, my_width)
             for(i = 2; i < my_height; i++){ // For every inner row
                 for(j = 2; j < my_width; j++){ // and every inner column
 
@@ -622,7 +622,7 @@ int main(void){
             //////////////////////////////////
             
             /* Use 2 threads for the 2 nested fors */
-            # pragma omp parallel for num_threads(ntrs) collapse(2)
+            # pragma omp parallel for num_threads(ntrs) collapse(2) schedule(static, my_width)
             for(i = 2; i < my_height; i++){ // For every inner row
                 for(j = 2; j < my_width; j++){ // and every inner column
 
@@ -835,7 +835,7 @@ int main(void){
             //////////////////////////////////
 
             /* Use 2 threads for the 2 nested fors */
-            # pragma omp parallel for num_threads(ntrs) collapse(2)
+            # pragma omp parallel for num_threads(ntrs) collapse(2) schedule(static, my_width)
             for(i = 2; i < my_height; i++){ // For every inner row
                 for(j = 2; j < my_width; j++){ // and every inner column
 
@@ -1047,7 +1047,7 @@ int main(void){
             //////////////////////////////////
 
             /* Use 2 threads for the 2 nested fors */
-            # pragma omp parallel for num_threads(ntrs) collapse(2)
+            # pragma omp parallel for num_threads(ntrs) collapse(2) schedule(static, my_width)
             for(i = 2; i < my_height; i++){ // For every inner row
                 for(j = 2; j < my_width; j++){ // and every inner column
 
@@ -1259,7 +1259,7 @@ int main(void){
             //////////////////////////////////
 
             /* Use 2 threads for the 2 nested fors */
-            # pragma omp parallel for num_threads(ntrs) collapse(2)
+            # pragma omp parallel for num_threads(ntrs) collapse(2) schedule(static, my_width)
             for(i = 2; i < my_height; i++){ // For every inner row
                 for(j = 2; j < my_width; j++){ // and every inner column
 
@@ -1572,7 +1572,7 @@ int main(void){
             //////////////////////////////////
 
             /* Use 2 threads for the 2 nested fors */
-            # pragma omp parallel for num_threads(ntrs) collapse(2)
+            # pragma omp parallel for num_threads(ntrs) collapse(2) schedule(static, my_width)
             for(i = 2; i < my_height; i++){ // For every inner row
                 for(j = 2; j < my_width; j++){ // and every inner column
 
@@ -1890,7 +1890,7 @@ int main(void){
             //////////////////////////////////
 
             /* Use 2 threads for the 2 nested fors */
-            # pragma omp parallel for num_threads(ntrs) collapse(2)
+            # pragma omp parallel for num_threads(ntrs) collapse(2) schedule(static, my_width)
             for(i = 2; i < my_height; i++){ // For every inner row
                 for(j = 2; j < my_width; j++){ // and every inner column
 
@@ -2210,7 +2210,7 @@ int main(void){
             //////////////////////////////////
 
             /* Use 2 threads for the 2 nested fors */
-            # pragma omp parallel for num_threads(ntrs) collapse(2)
+            # pragma omp parallel for num_threads(ntrs) collapse(2) schedule(static, my_width)
             for(i = 2; i < my_height; i++){ // For every inner row
                 for(j = 2; j < my_width; j++){ // and every inner column
 
@@ -2525,7 +2525,7 @@ int main(void){
             //////////////////////////////////
 
             /* Use 2 threads for the 2 nested fors */
-            # pragma omp parallel for num_threads(ntrs) collapse(2)
+            # pragma omp parallel for num_threads(ntrs) collapse(2) schedule(static, my_width)
             for(i = 2; i < my_height; i++){ // For every inner row
                 for(j = 2; j < my_width; j++){ // and every inner column
 
