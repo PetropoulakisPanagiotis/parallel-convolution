@@ -349,7 +349,7 @@ int main(void){
         //////////////////////////////////
 
         /* Use 2 threads for the 2 nested fors */
-        # pragma omp parallel for num_threads(NUM_THREADS) collapse(2) schedule(static, my_width)
+        # pragma omp parallel for num_threads(NUM_THREADS) collapse(2) schedule(static, (my_width - 2) * (my_height - 2) / NUM_THREADS)
         for(i = 2; i < my_height; i++){ // For every inner row
             for(j = 2; j < my_width; j++){ // and every inner column
 
@@ -386,6 +386,7 @@ int main(void){
                 flag_corner_ur += 1;
 
                 /* First line */
+                # pragma omp parallel for if(my_width - 2 > 10000) num_threads(NUM_THREADS) schedule(static, (my_width - 2) / NUM_THREADS)
                 for(j = 2; j < my_width; j++){
                     my_image_after[1][j] = (int)(my_image_before[1][j] * my_args.filter[1][1] +
                                             my_image_before[0][j] * my_args.filter[0][1] +
@@ -416,6 +417,7 @@ int main(void){
                 flag_corner_lr += 1;
 
                 /* Right column */
+                # pragma omp parallel for if(my_height - 2 > 10000) num_threads(NUM_THREADS) schedule(static, (my_height - 2) / NUM_THREADS)
                 for(i = 2; i < my_height; i++){
                     my_image_after[i][my_width] = (int)(my_image_before[i][my_width] * my_args.filter[1][1] +
                                                     my_image_before[i - 1][my_width] * my_args.filter[0][1] +
@@ -446,8 +448,9 @@ int main(void){
                 flag_corner_lr += 1;
 
                 /* Last line */
+                # pragma omp parallel for if(my_width - 2 > 10000) num_threads(NUM_THREADS) schedule(static, (my_width - 2) / NUM_THREADS)
                 for(j = 2; j < my_width; j++){
-                    my_image_after[my_height][j] = (int)(my_image_before[my_height][j] * my_args.filter[1][1] +
+                        my_image_after[my_height][j] = (int)(my_image_before[my_height][j] * my_args.filter[1][1] +
                                                     my_image_before[my_height_decr_1][j] * my_args.filter[0][1] +
                                                     my_image_before[my_height_decr_1][j + 1] * my_args.filter[0][2] +
                                                     my_image_before[my_height][j + 1] * my_args.filter[1][2] +
@@ -475,6 +478,7 @@ int main(void){
                 flag_corner_ll += 1;
 
                 /* Left column */
+                # pragma omp parallel for if(my_height - 2 > 10000) num_threads(NUM_THREADS) schedule(static, (my_width - 2) / NUM_THREADS)
                 for(i = 2; i < my_height; i++){
                     my_image_after[i][1] = (int)(my_image_before[i][1] * my_args.filter[1][1] +
                                             my_image_before[i - 1][1] * my_args.filter[0][1] +
