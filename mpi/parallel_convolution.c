@@ -202,9 +202,11 @@ int main(void){
     /* The resolution of the image that each process has - Add some frequent vars */
     int my_width, my_width_incr_1, my_width_decr_1, my_width_incr_2;
     int my_height, my_height_incr_1, my_height_decr_1, my_height_incr_2;
+    int mult_multi_2;
 
     mult = (my_args.image_type == 0) ? 1 : 3; // if grey type, mult = 1, else mult = 3
-
+    mult_multi_2 = mult * 2;
+    
     /* If width or height is not perfectly divided into processes, share */
     /* the n remaining pixels to the first n processes                   */
     if(row_id < my_args.width_remaining)
@@ -253,9 +255,9 @@ int main(void){
 
     /* Fill initial image with random numbers */
     for(i = 1; i <  my_height_incr_1; i++)
-        for(j = 1; j < my_width_incr_1; j++)
+        for(j = mult; j < my_width_incr_1; j++)
             my_image_before[i][j] = rand() % 256;
-
+    
     /* Set edges(hallow points, until neighbours send theirs) */
     for(i = 0; i < my_height_incr_2; i++){
         for(j = 0; j < mult; j++){
@@ -265,12 +267,10 @@ int main(void){
     }
 
     for(j = 0; j < my_width_incr_2; j++){
-        for(k = 0; k < mult; k++){
-            my_image_before[0][(j * mult) + k] = my_image_before[1][(j * mult) + k];
-            my_image_before[my_height_incr_1][(j * mult) + k] = my_image_before[my_height][(j * mult) + k];
-        }
+        my_image_before[0][j] = my_image_before[1][j];
+        my_image_before[my_height_incr_1][j] = my_image_before[my_height][j];
     }
-
+    
     /* Allocate an image to save the result */
     my_image_after = malloc((my_height_incr_2) * sizeof(int*));
     if(my_image_after == NULL)
@@ -289,6 +289,19 @@ int main(void){
         for(j = 0; j < my_width_incr_2; j++)
             my_image_after[i][j] = my_image_before[i][j];
 
+    /* Set edges(hallow points, until neighbours send theirs) */
+    for(i = 0; i < my_height_incr_2; i++){
+        for(j = 0; j < mult; j++){
+            my_image_after[i][j] = my_image_before[i][mult + j];
+            my_image_after[i][my_width_incr_1 + j] = my_image_before[i][my_width + j];
+        }
+    }
+
+    for(j = 0; j < my_width_incr_2; j++){
+        my_image_after[0][j] = my_image_before[1][j];
+        my_image_after[my_height_incr_1][j] = my_image_before[my_height][j];
+    }
+
     char fileName[10] = "";
     sprintf(fileName,"File%dA",my_rank);
 
@@ -306,9 +319,6 @@ int main(void){
     /* Set columns type for sending columns East and West */
     MPI_Datatype column_type;
     MPI_Type_vector(my_height, mult, my_width_incr_2, MPI_INT, &column_type);
-    //else
-        //MPI_Type_vector(my_height, 3, my_width_incr_2, MPI_INT, &column_type);
-
     MPI_Type_commit(&column_type);
 
     /* Initialize communication with neighbours */
@@ -437,7 +447,7 @@ int main(void){
                                                     my_image_before[i + 1][my_width_decr_1 + j] * my_args.filter[2][0] +
                                                     my_image_before[i][my_width_decr_1 + j] * my_args.filter[1][0] +
                                                     my_image_before[i - 1][my_width_decr_1 + j] * my_args.filter[0][0]);
-                    }
+                    } // End for
 
                     /* Truncated unexpected values */
                     if(my_image_after[i][my_width + j] < 0)
@@ -491,13 +501,13 @@ int main(void){
                     for(j = 0; j < mult; j++){
                         my_image_after[i][mult + j] = (int)(my_image_before[i][mult + j] * my_args.filter[1][1] +
                                                 my_image_before[i - 1][mult + j] * my_args.filter[0][1] +
-                                                my_image_before[i - 1][(2 * mult) + j] * my_args.filter[0][2] +
-                                                my_image_before[i][(2 * mult) + j] * my_args.filter[1][2] +
-                                                my_image_before[i + 1][(2 * mult) + j] * my_args.filter[2][2] +
+                                                my_image_before[i - 1][mult_multi_2 + j] * my_args.filter[0][2] +
+                                                my_image_before[i][mult_multi_2 + j] * my_args.filter[1][2] +
+                                                my_image_before[i + 1][mult_multi_2 + j] * my_args.filter[2][2] +
                                                 my_image_before[i + 1][mult + j] * my_args.filter[2][1] +
-                                                my_image_before[i + 1][0 + j] * my_args.filter[2][0] +
-                                                my_image_before[i][0 + j] * my_args.filter[1][0] +
-                                                my_image_before[i - 1][0 + j] * my_args.filter[0][0]);
+                                                my_image_before[i + 1][j] * my_args.filter[2][0] +
+                                                my_image_before[i][j] * my_args.filter[1][0] +
+                                                my_image_before[i - 1][j] * my_args.filter[0][0]);
 
                     }
                     /* Truncated unexpected values */
@@ -517,13 +527,13 @@ int main(void){
                 for(j = 0; j < mult; j++){
                     my_image_after[1][mult + j] = (int)(my_image_before[1][mult + j] * my_args.filter[1][1] +
                                             my_image_before[0][mult + j] * my_args.filter[0][1] +
-                                            my_image_before[0][(2 * mult) + j] * my_args.filter[0][2] +
-                                            my_image_before[1][(2 * mult) + j] * my_args.filter[1][2] +
-                                            my_image_before[2][(2 * mult) + j] * my_args.filter[2][2] +
+                                            my_image_before[0][mult_multi_2 + j] * my_args.filter[0][2] +
+                                            my_image_before[1][mult_multi_2 + j] * my_args.filter[1][2] +
+                                            my_image_before[2][mult_multi_2 + j] * my_args.filter[2][2] +
                                             my_image_before[2][mult + j] * my_args.filter[2][1] +
-                                            my_image_before[2][0 + j] * my_args.filter[2][0] +
-                                            my_image_before[1][0 + j] * my_args.filter[1][0] +
-                                            my_image_before[0][0 + j] * my_args.filter[0][0]);
+                                            my_image_before[2][j] * my_args.filter[2][0] +
+                                            my_image_before[1][j] * my_args.filter[1][0] +
+                                            my_image_before[0][j] * my_args.filter[0][0]);
                 }
 
                 /* Truncated unexpected values */
@@ -578,13 +588,13 @@ int main(void){
                 for(j = 0; j < mult; j++){
                     my_image_after[my_height][mult + j] = (int)(my_image_before[my_height][mult + j] * my_args.filter[1][1] +
                                                     my_image_before[my_height_decr_1][mult + j] * my_args.filter[0][1] +
-                                                    my_image_before[my_height_decr_1][(2 * mult) + j] * my_args.filter[0][2] +
-                                                    my_image_before[my_height][(2 * mult) + j] * my_args.filter[1][2] +
-                                                    my_image_before[my_height_incr_1][(2 * mult) + j] * my_args.filter[2][2] +
+                                                    my_image_before[my_height_decr_1][mult_multi_2 + j] * my_args.filter[0][2] +
+                                                    my_image_before[my_height][mult_multi_2 + j] * my_args.filter[1][2] +
+                                                    my_image_before[my_height_incr_1][mult_multi_2 + j] * my_args.filter[2][2] +
                                                     my_image_before[my_height_incr_1][mult + j] * my_args.filter[2][1] +
-                                                    my_image_before[my_height_incr_1][0 + j] * my_args.filter[2][0] +
-                                                    my_image_before[my_height][0 + j] * my_args.filter[1][0] +
-                                                    my_image_before[my_height_decr_1][0 + j] * my_args.filter[0][0]);
+                                                    my_image_before[my_height_incr_1][j] * my_args.filter[2][0] +
+                                                    my_image_before[my_height][j] * my_args.filter[1][0] +
+                                                    my_image_before[my_height_decr_1][j] * my_args.filter[0][0]);
                 }
 
                 /* Truncated unexpected values */
