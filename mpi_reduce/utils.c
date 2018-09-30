@@ -99,6 +99,10 @@ int read_filter(double filter[FILTER_SIZE][FILTER_SIZE]){
             total_sum += line_sum; // Line was valid, add it in total sum
 	} // End for
 
+    /* Avoid dividing with 0 - normalized filter will be the same */
+    if(total_sum == 0)
+        total_sum = 1;
+
     /* Normalize or not the filter */
     printf("If you want to normalize filter press y otherwise n:");
 
