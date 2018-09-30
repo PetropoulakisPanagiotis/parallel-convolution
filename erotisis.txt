@@ -1,9 +1,0 @@
-1) an eine sosto anti na exoume se ena katholiko for loop 100 ifs eite na exoume 8 ifs kai na xorisoume tis diergasies ana katigoria an epitrepete
-!!! Note: genika an sou pi gia virtual topology tha tou pis oti tha baloume kai oti genika (sto leo pio poli se esena) px anti na kanoume praksis sta 
-ifs me to virtual topology apla mpori na ginei me klisi sinartisis an eine px goniaki diergasia alla i allagi ine poli mikri dld opos to stisame tha paramini
-
-2) Genika na mas ksekatharisi ligo me to reduce --> dld opos to ksero an theli: ena arxio xoris reduce me x iterations kai ena arxio me reduce 
-opou oloi stelnoun se olous an siglinoun(flag == 1) i oxi. Fisika den mas endiaferi na stamatisoume mporoume px to poli na ektiposoume minima 
-oti brethike siglisi sto 50o loop eno omos sinexizoume kanonika an mas dothoun 100 loops
-3) sxetika me tous xronous, an afto pou prepei na kanoume eine oti: kathe diergasia na stelni stin 0 tous xronous tis kai na brethi enas mesos oros -> mpori na 
-ginei me klisis mpi gia na min exi to overhead mono o 0 process eite n(fisika metrame parallel commati mono oxi input me barriers klp)
