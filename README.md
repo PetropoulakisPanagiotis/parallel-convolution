@@ -21,7 +21,8 @@ Notes:
 * Virtual Topology - Cartesian 
 * Derived Data Types - Vector, Struct, Contiguous
 * Non - Blocking Communication
-* Dynamic Receiving - MPI_Status, MPI_Waitany, use of MPI_PROC_NULL 
+* Dynamic Receiving - MPI_Sttus, MPI_Waitany, use of MPI_PROC_NULL 
+* Static scheduling with OpenMp
 
 ## Requirements
 * MPI-3 <br />
