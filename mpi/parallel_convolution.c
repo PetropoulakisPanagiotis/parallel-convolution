@@ -321,9 +321,6 @@ int main(void){
         /* Start sending my pixels/non-blocking */
         MPI_Startall(NUM_NEIGHBOURS, send_requests);
 
-        /* Start receiving neighbours pixels/non-blocking */
-        MPI_Startall(NUM_NEIGHBOURS, recv_requests);
-
         //////////////////////////////////
         /* Convolute inner pixels first */
         //////////////////////////////////
@@ -350,6 +347,9 @@ int main(void){
             } // End for
         } // End for
 
+        /* Start receiving neighbours pixels/non-blocking */
+        MPI_Startall(NUM_NEIGHBOURS, recv_requests);
+        
         //////////////////////////////////
         /* Convolute outer pixels first */
         //////////////////////////////////
