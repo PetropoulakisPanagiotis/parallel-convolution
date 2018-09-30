@@ -99,14 +99,6 @@ int main(void){
         my_args.height_per_process = my_args.image_height / (int)sqrt(comm_size);
         my_args.height_remaining = my_args.image_height % (int)sqrt(comm_size);
 
-        /* Print all arguments found
-        printf("{0}t: %d, w:%d, h:%d, s:%d\nF:%lf %lf %lf %lf %lf %lf %lf %lf %lf\nwp: %d, wr: %d, hp: %d, hr: %d, iter: %d\n",
-        my_args.image_type,my_args.image_width,my_args.image_height,my_args.image_seed,
-        my_args.filter[0][0],my_args.filter[0][1],my_args.filter[0][2],my_args.filter[1][0],my_args.filter[1][1],
-        my_args.filter[1][2],my_args.filter[2][0],my_args.filter[2][1],my_args.filter[2][2],my_args.width_per_process,
-        my_args.width_remaining, my_args.height_per_process, my_args.height_remaining,my_args.iterations);
-        */
-
         /* Send arguments in other proccesses */
         for(i = 1; i < comm_size; i++)
             MPI_Send(&my_args, 1, args_type, i, 1, my_cartesian_comm);
@@ -115,14 +107,6 @@ int main(void){
 
         /* Get arguments from process 0*/
         MPI_Recv(&my_args, 1, args_type, 0, 1, my_cartesian_comm, &recv_stat);
-
-        /* Print arguments received
-        printf("{%d}t: %d, w:%d, h:%d, s:%d\nF:%lf %lf %lf %lf %lf %lf %lf %lf %lf\nwp: %d, wr: %d, hp: %d, hr: %d, iter: %d\n",
-        my_rank,my_args.image_type,my_args.image_width,my_args.image_height,my_args.image_seed,
-        my_args.filter[0][0],my_args.filter[0][1],my_args.filter[0][2],my_args.filter[1][0],my_args.filter[1][1],
-        my_args.filter[1][2],my_args.filter[2][0],my_args.filter[2][1],my_args.filter[2][2],my_args.width_per_process,
-        my_args.width_remaining, my_args.height_per_process, my_args.height_remaining,my_args.iterations);
-        */
     }
 
     /* For the next step find the 8 neighbours of the current process     */
@@ -182,20 +166,6 @@ int main(void){
         neighbours[NW] = my_rank - procs_per_line - 1;
     else
         neighbours[NW] = MPI_PROC_NULL;
-
-    /*
-    printf("[%d]{%d,%d} %d %d %d %d %d %d %d %d\n\n",my_rank,row_id,column_id,
-                                                     neighbours[0],
-                                                     neighbours[1],
-                                                     neighbours[2],
-                                                     neighbours[3],
-                                                     neighbours[4],
-                                                     neighbours[5],
-                                                     neighbours[6],
-                                                     neighbours[7]);
-
-    */
-
 
     int mult; // Will be used as multiplier to locate pixels, grey: 1, rgb: 3
 
@@ -302,19 +272,7 @@ int main(void){
         my_image_after[my_height_incr_1][j] = my_image_before[my_height][j];
     }
 
-    char fileName[10] = "";
-    sprintf(fileName,"File%dA",my_rank);
-
-    FILE* my_file = fopen(fileName, "w");
-
-    for(i = 0; i < my_height_incr_2; i++){
-        for(j = 0; j < my_width_incr_2; j++){
-            fprintf(my_file, "%d\t", my_image_before[i][j]);
-        }
-        fprintf(my_file, "\n");
-    }
-
-    fclose(my_file);
+    // printImageBefore(my_image_before,my_height_incr_2,my_width_incr_2,my_rank);
 
     /* Set columns type for sending columns East and West */
     MPI_Datatype column_type;
@@ -576,6 +534,7 @@ int main(void){
                                                             my_image_before[my_height][my_width_decr_1 + j] * my_args.filter[1][0] +
                                                             my_image_before[my_height_decr_1][my_width_decr_1 + j] * my_args.filter[0][0]);
                 }
+
                 /* Truncated unexpected values */
                 if(my_image_after[my_height][my_width + j] < 0)
                     my_image_after[my_height][my_width + j] = 0;
@@ -620,35 +579,28 @@ int main(void){
             my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
     } // End of iter
 
-    sprintf(fileName,"File%dB",my_rank);
-
-    my_file = fopen(fileName, "w");
-    for(i = 0; i < my_height_incr_2; i++){
-        for(j = 0; j < my_width_incr_2; j++){
-            fprintf(my_file, "%d\t", my_image_before[i][j]);
-         }
-         fprintf(my_file, "\n");
-     }
-
-     fclose(my_file);
-
+    // printImageAfter(my_image_before,my_height_incr_2,my_width_incr_2,my_rank);
+  
     /* Get time to calculate run time */
     double end = MPI_Wtime();
     double time_elapsed = end - start;
-    printf("[%d] My time is %lf\n", my_rank, time_elapsed);
-
-    double max_time;
+    double max_time, min_time;
 
     /* Print max run-time in parallel section */
-    if(comm_size != 1)
+    if(comm_size != 1){
         MPI_Reduce(&time_elapsed, &max_time, 1, MPI_DOUBLE, MPI_MAX, 0, my_cartesian_comm);
-    else
-        max_time = time_elapsed;
-
-    if(my_rank == 0){
-        printf("\n[Parallel Convolution Completed]:\nType of Image: %d\nResolution: %d x %d\nSeed Given: %d\nNumber of Iterations: %d\nNumber of Processes: %d\nCompleted in: %.3lf seconds\n",
-            my_args.image_type, my_args.image_width, my_args.image_height, my_args.image_seed, my_args.iterations, comm_size, max_time);
+        MPI_Reduce(&time_elapsed, &min_time, 1, MPI_DOUBLE, MPI_MIN, 0, my_cartesian_comm);
+    
     }
+    else{
+        max_time = time_elapsed;
+        min_time = time_elapsed;
+    }
+
+    /* Print results */
+    if(my_rank == 0)
+        printf("\n[Parallel Convolution Completed]:\nType of Image: %d\nResolution: %d x %d\nSeed Given: %d\nNumber of Iterations: %d\nNumber of Processes: %d\nRun time: %.5lf seconds\nFastest process completed in: %.5lf seconds\n\n",
+        my_args.image_type, my_args.image_width, my_args.image_height, my_args.image_seed, my_args.iterations, comm_size, max_time,min_time);
 
     /* Free memory */
     free(my_image_before[0]);

@@ -13,13 +13,13 @@
 #pragma once
 
 /* Definitions */
-#define MAX_WIDTH 3500 // Max width of pictures
-#define MAX_HEIGHT 3500 // Max height of pictures
+#define MAX_WIDTH 15000 // Max width of pictures
+#define MAX_HEIGHT 15000 // Max height of pictures
 #define MAX_SEED 50 // For randomly generated pictures
 #define FILTER_SIZE 3 // 3 x 3 -> Must not be changed
 #define FILTER_MAX_VALUE 10 // Max value of filter
 #define FILTER_MIN_VALUE -10
-#define MAX_ITERATIONS 200 
+#define MAX_ITERATIONS 2000 
 #define PROCESSES_LIMIT 100
 #define NUM_THREADS 4 // Number of threads
 
@@ -54,3 +54,8 @@ int read_filter(double[FILTER_SIZE][FILTER_SIZE]);
 
 /* Read the arguments for convolution */
 int read_user_input(Args_type*,int);
+
+/* Debugging */
+void printImageBefore(int**,int,int,int);
+void printImageAfter(int**,int,int,int);
+

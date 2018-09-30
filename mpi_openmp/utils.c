@@ -158,7 +158,7 @@ int read_user_input(Args_type* args, int procs_per_line){
         return -1;
     }
 
-    printf("Welcome to parallel convolution program.\n\n");
+    printf("\nWelcome to parallel convolution program with OpenMp.\n");
     printf("----------------------------------------\n\n");
 
     /* Read input */
@@ -284,4 +284,40 @@ int read_user_input(Args_type* args, int procs_per_line){
     error = read_filter(args->filter);
 
     return error;
+}
+
+/* Debugging */
+void printImageBefore(int** my_image_before, int my_height_incr_2, int my_width_incr_2, int my_rank){
+    char fileName[20];
+    int i,j;
+
+
+    sprintf(fileName,"File%dA",my_rank);
+    FILE* my_file = fopen(fileName, "w");
+
+    for(i = 0; i < my_height_incr_2; i++){
+        for(j = 0; j < my_width_incr_2; j++){
+            fprintf(my_file, "%d\t", my_image_before[i][j]);
+        }
+        fprintf(my_file, "\n");
+    }
+
+    fclose(my_file);
+}
+
+void printImageAfter(int** my_image_before, int my_height_incr_2, int my_width_incr_2, int my_rank){
+    char fileName[20];
+    int i,j;
+    
+    sprintf(fileName,"File%dA",my_rank);
+    FILE* my_file = fopen(fileName, "w");
+
+    for(i = 0; i < my_height_incr_2; i++){
+        for(j = 0; j < my_width_incr_2; j++){
+            fprintf(my_file, "%d\t", my_image_before[i][j]);
+        }
+        fprintf(my_file, "\n");
+    }
+
+    fclose(my_file);
 }
