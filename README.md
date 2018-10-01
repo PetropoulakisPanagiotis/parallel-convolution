@@ -46,7 +46,12 @@ Note: Run make file inside folders
 * Filter: sharpen
 
 ## Results - OpenMP
-
+![alt text](https://github.com/PetropoulakisPanagiotis/parallel-convolution/blob/master/results/openmp_plot.png)
+* Input
+* Resolution: 2000 x 2000
+* Seed: 2
+* Iterations: 150
+* Filter: Unit filter
 
 ## Contributing
 * Introduce parallel I/O: Handle a real image <br />
