@@ -33,6 +33,21 @@ Notes:
 2. mpiexec -n 4 ./filter <br />
 Note: Run make file inside folders  
 
+## Results - MPI
+![alt text](https://github.com/PetropoulakisPanagiotis/parallel-convolution/edit/master/results/mpi-bw.png)
+![alt text](https://github.com/PetropoulakisPanagiotis/parallel-convolution/edit/master/results/mpi-reduce-bw.png)
+![alt text](https://github.com/PetropoulakisPanagiotis/parallel-convolution/edit/master/results/mpi-rgb.png)
+![alt text](https://github.com/PetropoulakisPanagiotis/parallel-convolution/edit/master/results/mpi-reduce-rgb.png)
+
+* Input
+* Resolution: 1920 x 2520
+* Seed: 3
+* Iterations: 150
+* Filter: sharpen
+
+## Results - OpenMP
+
+
 ## Contributing
 * Introduce parallel I/O: Handle a real image <br />
 Note: The user will enter the image path, the filter and the number of iterations
