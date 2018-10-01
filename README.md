@@ -43,7 +43,7 @@ Note: Run make file inside folders
 * Resolution: 1920 x 2520
 * Seed: 3
 * Iterations: 150
-* Filter: sharpen
+* Filter: Sharpen
 
 ## Results - OpenMP
 ![alt text](https://github.com/PetropoulakisPanagiotis/parallel-convolution/blob/master/results/openmp_plot.png)
