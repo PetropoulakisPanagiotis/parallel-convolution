@@ -45,21 +45,10 @@ Note: Run make file inside folders
 * Iterations: 150
 * Filter: Sharpen
 
-## Results - OpenMP
-![alt text](https://github.com/PetropoulakisPanagiotis/parallel-convolution/blob/master/results/openmp_plot.png)
-* Input
-* Black and white
-* Resolution: 2000 x 2000
-* Seed: 2
-* Iterations: 150
-* Filter: Unit filter
-
 ## Machines statistics
 * I5-6500 cpu @ 3.20 GHz
 * 4 CPU per machine
 * RAM: 33MHz - 15 GB per machine
-* Threads per core: 1
-* OpenMp measurements: 1 cpu with 4 threads
 
 ## Contributing
 * Introduce parallel I/O: Handle a real image <br />
