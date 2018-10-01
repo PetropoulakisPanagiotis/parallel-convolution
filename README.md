@@ -48,6 +48,7 @@ Note: Run make file inside folders
 ## Results - OpenMP
 ![alt text](https://github.com/PetropoulakisPanagiotis/parallel-convolution/blob/master/results/openmp_plot.png)
 * Input
+* Black and white
 * Resolution: 2000 x 2000
 * Seed: 2
 * Iterations: 150
