@@ -34,10 +34,10 @@ Notes:
 Note: Run make file inside folders  
 
 ## Results - MPI
-![alt text](https://github.com/PetropoulakisPanagiotis/parallel-convolution/edit/master/results/mpi-bw.png)
-![alt text](https://github.com/PetropoulakisPanagiotis/parallel-convolution/edit/master/results/mpi-reduce-bw.png)
-![alt text](https://github.com/PetropoulakisPanagiotis/parallel-convolution/edit/master/results/mpi-rgb.png)
-![alt text](https://github.com/PetropoulakisPanagiotis/parallel-convolution/edit/master/results/mpi-reduce-rgb.png)
+![alt text](https://github.com/PetropoulakisPanagiotis/parallel-convolution/blob/master/results/mpi-bw.png)
+![alt text](https://github.com/PetropoulakisPanagiotis/parallel-convolution/blob/master/results/mpi-reduce-bw.png)
+![alt text](https://github.com/PetropoulakisPanagiotis/parallel-convolution/blob/master/results/mpi-rgb.png)
+![alt text](https://github.com/PetropoulakisPanagiotis/parallel-convolution/blob/master/results/mpi-reduce-rgb.png)
 
 * Input
 * Resolution: 1920 x 2520
