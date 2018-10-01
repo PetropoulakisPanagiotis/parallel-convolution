@@ -53,12 +53,13 @@ Note: Run make file inside folders
 * Iterations: 150
 * Filter: Unit filter
 
-## Note for measurments
+## Machines statistics
 * I5-6500 cpu @ 3.20 GHz
 * 4 CPU per machine
 * RAM: 33MHz - 15 GB per machine
 * Threads per core: 1
 * OpenMp measurements: 1 cpu with 4 threads
+
 ## Contributing
 * Introduce parallel I/O: Handle a real image <br />
 Note: The user will enter the image path, the filter and the number of iterations
