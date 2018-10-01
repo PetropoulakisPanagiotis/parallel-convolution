@@ -53,7 +53,6 @@ Note: Run make file inside folders
 * Seed: 2
 * Iterations: 150
 * Filter: Unit filter
-* 1 mpi process + 4 threads(OpenMp)
 
 ## Machines statistics
 * I5-6500 cpu @ 3.20 GHz
