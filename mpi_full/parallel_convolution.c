@@ -15,6 +15,7 @@
 #include <mpi.h>
 #include <math.h>
 #include <stddef.h>
+#include <omp.h>
 
 #include "utils.h"
 
@@ -23,7 +24,7 @@ int main(void){
     MPI_Status recv_stat; // For communication
     Args_type my_args; // Arguments of current process
     int comm_size, my_rank, error;
-    int i, j, k, iter, index;
+    int i, j, k, iter, index, print_message = 0, all_finished; // print_message & all_finished: convergence check
 
     /* Initialize MPI environment - Get number of processes and rank. */
     MPI_Init(NULL, NULL);
@@ -313,20 +314,21 @@ int main(void){
     MPI_Recv_init(&my_image_before[0][0], mult, MPI_INT, neighbours[NW], NW, my_cartesian_comm, &recv_requests[NW]);
 
 
-    /* Note for flags    */
-    /* ur -> upper right */
-    /* ul -> upper left  */
-    /* ll -> lower left  */
-    /* lr -> lower right */
-
-    /* When Flag == 3, convolute corner */
-    int flag_corner_ul = 0, flag_corner_ur = 0, flag_corner_ll = 0, flag_corner_lr = 0;
-
     MPI_Barrier(my_cartesian_comm);
     double start = MPI_Wtime(); // Get start time before iterations
 
     /* Perform convolution */
     for(iter = 0; iter < my_args.iterations; iter++){
+
+        /* Note for flags    */
+        /* ur -> upper right */
+        /* ul -> upper left  */
+        /* ll -> lower left  */
+        /* lr -> lower right */
+
+        /* When Flag == 3, convolute corner */
+        int flag_corner_ul = 0, flag_corner_ur = 0, flag_corner_ll = 0, flag_corner_lr = 0;
+
 
         /* Start sending my pixels/non-blocking */
         MPI_Startall(NUM_NEIGHBOURS, send_requests);
@@ -335,8 +337,9 @@ int main(void){
         //////////////////////////////////
         /* Convolute inner pixels first */
         //////////////////////////////////
+        # pragma omp parallel for num_threads(NUM_THREADS) collapse(2) schedule(static, (my_width - 2) * (my_height - 2) / NUM_THREADS)
         for(i = 2; i < my_height; i++){ // For every inner row
-            for(j = 2; j < my_width; j++){ // and every inner column
+            for(j = 2 * mult; j < my_width; j++){ // and every inner column
 
                 /* Compute the new value of the current pixel */
                 my_image_after[i][j] = (int)(my_image_before[i][j] * my_args.filter[1][1] +
@@ -371,8 +374,8 @@ int main(void){
 
             /* Convolute first line, left upper corner and right upper corner */
             if(index == N){
-                flag_corner_ul += 1;
-                flag_corner_ur += 1;
+                flag_corner_ul++;
+                flag_corner_ur++;
 
                 /* First line */
                 for(j = 2 * mult; j < my_width; j++){
@@ -396,13 +399,13 @@ int main(void){
             } // End if N
             /* Check if it is possible to convolute right upper corner */
             else if(index == NE){
-                flag_corner_ur += 1;
+                flag_corner_ur++;
 
             } // End if NE
             /* Convolute right column, right upper corner and right lower corner */
             else if(index == E){
-                flag_corner_ur += 1;
-                flag_corner_lr += 1;
+                flag_corner_ur++;
+                flag_corner_lr++;
 
                 /* Right column */
                 for(i = 2; i < my_height; i++){
@@ -428,12 +431,12 @@ int main(void){
             } // End if E
             /* Check if it is possible to convolute right lower corner */
             else if(index == SE){
-                flag_corner_lr += 1;
+                flag_corner_lr++;
             } // End if SE
             /* Convolute last line, left lower corner and right lower corner */
             else if(index == S){
-                flag_corner_ll += 1;
-                flag_corner_lr += 1;
+                flag_corner_ll++;
+                flag_corner_lr++;
 
                 /* Last line */
                 for(j = 2 * mult; j < my_width; j++){
@@ -457,12 +460,12 @@ int main(void){
             } // End if S
             /* Check if it is possible to convolute left lower corner */
             else if (index == SW){
-                flag_corner_ll += 1;
+                flag_corner_ll++;
             } // End if SW
             /* Convolute left column, left upper corner and left lower corner */
             if(index == W){
-                flag_corner_ul += 1;
-                flag_corner_ll += 1;
+                flag_corner_ul++;
+                flag_corner_ll++;
 
                 /* Left column */
                 for(i = 2; i < my_height; i++){
@@ -489,7 +492,7 @@ int main(void){
             } // End if W
             /* Check if it is possible to convolute left upper corner */
             if(index == NW){
-                flag_corner_ul += 1;
+                flag_corner_ul++;
             } // End if NW
             /* Convolute left upper corner */
             if(flag_corner_ul == 3){
@@ -509,7 +512,7 @@ int main(void){
                     my_image_after[1][mult + j] = 0;
                     else if(my_image_after[1][mult + j] > 255)
                     my_image_after[1][mult + j] = 255;
-                }
+                } // End for
 
             } // End if corner
             /* Convolute right upper corner */
@@ -578,6 +581,43 @@ int main(void){
 
         /* Wait all pixels to be send before procceeding to the next loop */
         MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
+
+
+        ///////////////////////////////////
+        /* Convergence check with Reduce */
+        ///////////////////////////////////
+
+        /* Comment or uncomment if you want to use reduce for checking */
+        // [[ Comment: insert // below, Uncomment: Remove // from below ]]
+        ///*
+        int equality_flag = 0;
+
+        // Check current image first
+        for(i = 1; (i < my_height_incr_1) && (equality_flag == 0); i++){
+            for(j = mult; j < my_width_incr_1; j++){
+                if(my_image_before[i][j] != my_image_after[i][j]){
+                    equality_flag = 1;
+                    break;
+                } // End if
+            } // End for
+        } // End for
+
+        // Check if all processes reach convergence
+        MPI_Allreduce(&equality_flag, &all_finished, 1, MPI_INT, MPI_LOR, my_cartesian_comm);
+
+        if(my_rank == 0 && print_message == 0 && all_finished == 0){
+            printf("Image convergence at %d iteration\n",iter);
+            print_message = 1;
+        }
+
+
+        // [[ Comment: insert // below, Uncomment: Remove // from below ]]
+        //*/
+
+        //////////////////////////////
+        /* End of Convergence check */
+        //////////////////////////////
+
 
         /* In the next loop perform convolution to the new image  - swap images */
         tmp_ptr = my_image_before[0];
