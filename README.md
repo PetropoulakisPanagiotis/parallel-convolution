@@ -30,7 +30,7 @@ Notes:
 
 ## Compilation/Run
 1. make
-2. mpiexec -n 4 ./filter <br />
+2. mpiexec -n 4 ./convolution <br />
 Note: Run make file inside folders  
 
 ## Results - MPI
