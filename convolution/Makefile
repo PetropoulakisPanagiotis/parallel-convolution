@@ -2,7 +2,7 @@ CC = mpicc
 CFLAGS = -g -Wall -fopenmp
 LM = -lm
 OBJECTS = parallel_convolution.o utils.o
-EX = filter
+EX = convolution
 
 $(EX): $(OBJECTS)
 	$(CC) $(CFLAGS) $(OBJECTS) -o $(EX) $(LM)
