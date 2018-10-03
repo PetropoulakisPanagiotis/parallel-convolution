@@ -19,12 +19,16 @@
 
 #include "utils.h"
 
+/* Enable behaviors */ 
+//#define CHECK_CONVERGENCE
+//#define ENABLE_OPEN_MP
+
 int main(void){
     MPI_Datatype args_type, filter_type, filter_type1; // Define new mpi derived types
     MPI_Status recv_stat; // For communication
     Args_type my_args; // Arguments of current process
     int comm_size, my_rank, error;
-    int i, j, k, iter, index, print_message = 0, all_finished; // print_message & all_finished: convergence check
+    int i, j, k, iter, index, print_message = 0, all_finished, equality_flag = 0; // print_message & all_finished: convergence check
 
     /* Initialize MPI environment - Get number of processes and rank. */
     MPI_Init(NULL, NULL);
@@ -313,6 +317,8 @@ int main(void){
     MPI_Recv_init(&my_image_before[1][0], 1, column_type, neighbours[W], W, my_cartesian_comm, &recv_requests[W]);
     MPI_Recv_init(&my_image_before[0][0], mult, MPI_INT, neighbours[NW], NW, my_cartesian_comm, &recv_requests[NW]);
 
+    /* When Flag == 3, convolute corner */
+    int flag_corner_ul = 0, flag_corner_ur = 0, flag_corner_ll = 0, flag_corner_lr = 0;
 
     MPI_Barrier(my_cartesian_comm);
     double start = MPI_Wtime(); // Get start time before iterations
@@ -326,18 +332,22 @@ int main(void){
         /* ll -> lower left  */
         /* lr -> lower right */
 
-        /* When Flag == 3, convolute corner */
-        int flag_corner_ul = 0, flag_corner_ur = 0, flag_corner_ll = 0, flag_corner_lr = 0;
-
+        /* Reset flags */
+        flag_corner_ul = 0;
+        flag_corner_ur = 0; 
+        flag_corner_ll = 0;
+        flag_corner_lr = 0;
 
         /* Start sending my pixels/non-blocking */
         MPI_Startall(NUM_NEIGHBOURS, send_requests);
 
-
         //////////////////////////////////
         /* Convolute inner pixels first */
         //////////////////////////////////
-        # pragma omp parallel for num_threads(NUM_THREADS) collapse(2) schedule(static, (my_width - 2) * (my_height - 2) / NUM_THREADS)
+            
+        #ifdef ENABLE_OPEN_MP
+        #pragma omp parallel for num_threads(NUM_THREADS) collapse(2) schedule(static, (my_width - 2) * (my_height - 2) / NUM_THREADS)
+        #endif
         for(i = 2; i < my_height; i++){ // For every inner row
             for(j = 2 * mult; j < my_width; j++){ // and every inner column
 
@@ -582,15 +592,12 @@ int main(void){
         /* Wait all pixels to be send before procceeding to the next loop */
         MPI_Waitall(NUM_NEIGHBOURS, send_requests, MPI_STATUS_IGNORE);
 
-
         ///////////////////////////////////
         /* Convergence check with Reduce */
         ///////////////////////////////////
 
-        /* Comment or uncomment if you want to use reduce for checking */
-        // [[ Comment: insert // below, Uncomment: Remove // from below ]]
-        ///*
-        int equality_flag = 0;
+        #ifdef CHECK_CONVERGENCE 
+        equality_flag = 0;
 
         // Check current image first
         for(i = 1; (i < my_height_incr_1) && (equality_flag == 0); i++){
@@ -609,15 +616,11 @@ int main(void){
             printf("Image convergence at %d iteration\n",iter);
             print_message = 1;
         }
-
-
-        // [[ Comment: insert // below, Uncomment: Remove // from below ]]
-        //*/
+        #endif
 
         //////////////////////////////
         /* End of Convergence check */
         //////////////////////////////
-
 
         /* In the next loop perform convolution to the new image  - swap images */
         tmp_ptr = my_image_before[0];
@@ -629,7 +632,6 @@ int main(void){
         my_image_after[0] = tmp_ptr;
         for(i = 1; i < my_height_incr_2; i++)
             my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
-
     } // End of iter
 
     /* Get time to calculate run time */
