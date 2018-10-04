@@ -303,7 +303,7 @@ int main(void){
     MPI_Request recv_after_requests[NUM_NEIGHBOURS];
     MPI_Request recv_before_requests[NUM_NEIGHBOURS];
 
-    /* Send to each neighbour, tagging it with the opposite direction of the receiving process(eg N->S, SW -> NE) */
+    /* Initialize send requests */
     MPI_Send_init(&my_image_after[1][mult], my_width, MPI_INT, neighbours[N], S, my_cartesian_comm, &send_after_requests[N]);
     MPI_Send_init(&my_image_after[1][my_width], mult, MPI_INT, neighbours[NE], SW, my_cartesian_comm, &send_after_requests[NE]);
     MPI_Send_init(&my_image_after[1][my_width], 1, column_type, neighbours[E], W, my_cartesian_comm, &send_after_requests[E]);
@@ -313,7 +313,6 @@ int main(void){
     MPI_Send_init(&my_image_after[1][mult], 1, column_type, neighbours[W], E, my_cartesian_comm, &send_after_requests[W]);
     MPI_Send_init(&my_image_after[1][mult], mult, MPI_INT, neighbours[NW], SE, my_cartesian_comm, &send_after_requests[NW]);
     
-    /* Send to each neighbour, tagging it with the opposite direction of the receiving process(eg N->S, SW -> NE) */
     MPI_Send_init(&my_image_before[1][mult], my_width, MPI_INT, neighbours[N], S, my_cartesian_comm, &send_before_requests[N]);
     MPI_Send_init(&my_image_before[1][my_width], mult, MPI_INT, neighbours[NE], SW, my_cartesian_comm, &send_before_requests[NE]);
     MPI_Send_init(&my_image_before[1][my_width], 1, column_type, neighbours[E], W, my_cartesian_comm, &send_before_requests[E]);
@@ -323,7 +322,7 @@ int main(void){
     MPI_Send_init(&my_image_before[1][mult], 1, column_type, neighbours[W], E, my_cartesian_comm, &send_before_requests[W]);
     MPI_Send_init(&my_image_before[1][mult], mult, MPI_INT, neighbours[NW], SE, my_cartesian_comm, &send_before_requests[NW]);
     
-    /* Receive from all neighbours */
+    /* Initialize receive requests */
     MPI_Recv_init(&my_image_after[0][mult], my_width, MPI_INT, neighbours[N], N, my_cartesian_comm, &recv_after_requests[N]);
     MPI_Recv_init(&my_image_after[0][my_width_incr_1], mult, MPI_INT, neighbours[NE], NE, my_cartesian_comm, &recv_after_requests[NE]);
     MPI_Recv_init(&my_image_after[1][my_width_incr_1], 1, column_type, neighbours[E], E, my_cartesian_comm, &recv_after_requests[E]);
@@ -333,7 +332,6 @@ int main(void){
     MPI_Recv_init(&my_image_after[1][0], 1, column_type, neighbours[W], W, my_cartesian_comm, &recv_after_requests[W]);
     MPI_Recv_init(&my_image_after[0][0], mult, MPI_INT, neighbours[NW], NW, my_cartesian_comm, &recv_after_requests[NW]);
 
-    /* Receive from all neighbours */
     MPI_Recv_init(&my_image_before[0][mult], my_width, MPI_INT, neighbours[N], N, my_cartesian_comm, &recv_before_requests[N]);
     MPI_Recv_init(&my_image_before[0][my_width_incr_1], mult, MPI_INT, neighbours[NE], NE, my_cartesian_comm, &recv_before_requests[NE]);
     MPI_Recv_init(&my_image_before[1][my_width_incr_1], 1, column_type, neighbours[E], E, my_cartesian_comm, &recv_before_requests[E]);
@@ -363,8 +361,9 @@ int main(void){
         flag_corner_ur = 0; 
         flag_corner_ll = 0;
         flag_corner_lr = 0;
-
-        /* Start sending my outer pixels */
+        
+        /* Start sending my outer pixels                */
+        /* Note: buffers of send requests based on iter */
         if(iter % 2 == 0)
             MPI_Startall(NUM_NEIGHBOURS, send_before_requests);
         else
@@ -398,7 +397,6 @@ int main(void){
                     my_image_after[i][j] = 255;
             } // End for
         } // End for
-
 
         /* Start receiving neighbours pixels/non-blocking */
         if(iter % 2 == 0)
