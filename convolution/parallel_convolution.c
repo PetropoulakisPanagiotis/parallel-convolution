@@ -273,10 +273,6 @@ int main(void){
     for(i = 1; i < (my_height_incr_2); i++)
         my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
 
-    for(i = 0; i <  my_height_incr_2; i++)
-        for(j = 0; j < my_width_incr_2; j++)
-            my_image_after[i][j] = my_image_before[i][j];
-
     /* Set edges(hallow points, until neighbours send theirs) */
     for(i = 0; i < my_height_incr_2; i++){
         for(j = 0; j < mult; j++){
@@ -290,7 +286,8 @@ int main(void){
         my_image_after[my_height_incr_1][j] = my_image_before[my_height][j];
     }
 
-    printImageBefore(my_image_before,my_height_incr_2,my_width_incr_2,my_rank);
+    /* For debug */
+    //printImageBefore(my_image_before,my_height_incr_2,my_width_incr_2,my_rank);
 
     /* Set columns type for sending columns East and West */
     MPI_Datatype column_type;
@@ -671,12 +668,13 @@ int main(void){
             my_image_after[i] = &(my_image_after[0][i*(my_width_incr_2)]);
     } // End of iter
 
+    /* For debug */
+    //printImageAfter(my_image_before,my_height_incr_2,my_width_incr_2,my_rank);
+    
     /* Get time to calculate run time */
     double end = MPI_Wtime();
     double time_elapsed = end - start;
     double max_time, min_time;
-
-    printImageAfter(my_image_before,my_height_incr_2,my_width_incr_2,my_rank);
 
     /* Print max run-time in parallel section */
     if(comm_size != 1){
