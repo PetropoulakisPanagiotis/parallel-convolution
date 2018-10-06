@@ -1,3 +1,10 @@
+* Input:
+* Size: 1920 x 2520
+* Seed: 3
+* Iter: 150
+* Filter(will be normalized): -1 0 1 <br />
+                              -1 0 1 <br />
+                              -1 0 1 <br />
 # mpi - rgb
 ## 1 proc
 Size | x/4 | x/2 | x | 2x | x | 
