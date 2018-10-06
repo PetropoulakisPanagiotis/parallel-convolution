@@ -6,7 +6,7 @@
 * Size: 1920 x 2520
 * Seed: 3
 * Iter: 150
-* Filter(will be normalized): 
+* Filter(will be normalized): <br />
 -1 0 1 <br />
                               -1 0 1 <br />
                               -1 0 1 <br />
