@@ -12,119 +12,119 @@
                               -1 0 1 <br />
 # mpi - rgb
 ## 1 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
 
 ## 4 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
 
 ## 9 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
 
 ## 16 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
 
 ## 25 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
 
 ## 36 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
 
 # mpi - rgb - reduce
 ## 1 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
 
 ## 4 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
 
 ## 9 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
 
 ## 16 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
 
 ## 25 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
 
 # mpi - black and white
 ## 1 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
 
 ## 4 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
 
 ## 9 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
 
 ## 16 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
 
 ## 25 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 |
 
 ## 36 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
 
 # mpi - black and white - reduce
 ## 1 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
 
 ## 4 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
 
 ## 9 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
 
 ## 16 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
 
 ## 25 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 |
 
 ## 36 proc
-Size | x/4 | x/2 | x | 2x | x | 
+Size | x/4 | x/2 | x | 2x | 4x | 
 --- | --- | --- | --- |--- |--- |
 Run time(sec) | 301 | 283 | 290 | 286 | 289 | 
