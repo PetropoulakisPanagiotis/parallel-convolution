@@ -6,7 +6,8 @@
 * Size: 1920 x 2520
 * Seed: 3
 * Iter: 150
-* Filter(will be normalized): -1 0 1 <br />
+* Filter(will be normalized): 
+-1 0 1 <br />
                               -1 0 1 <br />
                               -1 0 1 <br />
 # mpi - rgb
