@@ -33,23 +33,6 @@ Notes:
 2. mpiexec -n 4 ./convolution <br />
 Note: Run make file inside folders  
 
-## Results - MPI
-![alt text](https://github.com/PetropoulakisPanagiotis/parallel-convolution/blob/master/results/mpi-bw.png)
-![alt text](https://github.com/PetropoulakisPanagiotis/parallel-convolution/blob/master/results/mpi-reduce-bw.png)
-![alt text](https://github.com/PetropoulakisPanagiotis/parallel-convolution/blob/master/results/mpi-rgb.png)
-![alt text](https://github.com/PetropoulakisPanagiotis/parallel-convolution/blob/master/results/mpi-reduce-rgb.png)
-
-* Input
-* Resolution: 1920 x 2520
-* Seed: 3
-* Iterations: 150
-* Filter: Sharpen
-
-## Machines statistics
-* I5-6500 cpu @ 3.20 GHz
-* 4 CPU per machine
-* RAM: 33MHz - 15 GB per machine
-
 ## Contributing
 * Introduce parallel I/O: Handle a real image <br />
 Note: The user will enter the image path, the filter and the number of iterations
