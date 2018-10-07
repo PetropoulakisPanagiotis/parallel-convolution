@@ -3,6 +3,7 @@
 * 4 CPU per machine
 * RAM: 33MHz - 15 GB per machine
 * 1 mpi process per cpu
+* Time: in seconds
 * Size: 2520 x 1920
 * Seed: 3
 * Iter: 150
