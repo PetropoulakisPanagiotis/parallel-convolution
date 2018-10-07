@@ -1,4 +1,4 @@
-# Notes
+# Mpi results
 * I5-6500 cpu @ 3.20 GHz
 * 4 CPU per machine
 * RAM: 33MHz - 15 GB per machine
