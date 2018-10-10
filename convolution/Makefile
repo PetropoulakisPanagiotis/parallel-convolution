@@ -17,6 +17,3 @@ utils.o: utils.c
 
 clean:
 	rm -f $(EX) $(OBJECTS)
-
-debug:
-	mpiexec -n 4 valgrind --track-origins=yes --leak-check=full --show-leak-kinds=all --vgdb-error=1  ./filter
