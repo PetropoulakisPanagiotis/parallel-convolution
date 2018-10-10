@@ -291,29 +291,11 @@ int read_user_input(Args_type* args, int procs_per_line){
 }
 
 /* Debugging */
-void printImageBefore(int** my_image_before, int my_height_incr_2, int my_width_incr_2, int my_rank){
-    char fileName[20];
+void printImage(int** my_image_before, int my_height_incr_2, int my_width_incr_2, int my_rank, int iter){
+    char fileName[25];
     int i,j;
 
-
-    sprintf(fileName,"File%dA",my_rank);
-    FILE* my_file = fopen(fileName, "w");
-
-    for(i = 0; i < my_height_incr_2; i++){
-        for(j = 0; j < my_width_incr_2; j++){
-            fprintf(my_file, "%d\t", my_image_before[i][j]);
-        }
-        fprintf(my_file, "\n");
-    }
-
-    fclose(my_file);
-}
-
-void printImageAfter(int** my_image_before, int my_height_incr_2, int my_width_incr_2, int my_rank){
-    char fileName[20];
-    int i,j;
-
-    sprintf(fileName,"File%dB",my_rank);
+    sprintf(fileName,"File%d_%d", my_rank, iter);
     FILE* my_file = fopen(fileName, "w");
 
     for(i = 0; i < my_height_incr_2; i++){
