@@ -21,9 +21,13 @@
 #define FILTER_MIN_VALUE -10
 #define MAX_ITERATIONS 2000
 #define PROCESSES_LIMIT 100
-#define NUM_THREADS 2 // Number of threads
+#define NUM_THREADS 1 // Number of threads
 
-/* Neighbours - Mapping(nort, east, etc.) */
+/* Enable behaviors */
+//#define CHECK_CONVERGENCE
+//#define ENABLE_OPEN_MP
+
+/* Neighbours - Mapping(north, east, etc.) */
 #define NUM_NEIGHBOURS 8
 #define N 0
 #define NE 1
@@ -49,12 +53,11 @@ typedef struct Args_type{
 /*  Gets the filter of convolution. Given an allocated array         */
 /*  scans from stdin the filter line by line. When the line is given */
 /*  all integers are seperated and are placed in the filter. In case */
-/* of an error, the line is rescanned.                               */
+/*  of an error, the line is rescanned.                              */
 int read_filter(double[FILTER_SIZE][FILTER_SIZE]);
 
 /* Read the arguments for convolution */
 int read_user_input(Args_type*,int);
 
 /* Debugging */
-void printImageBefore(int**,int,int,int);
-void printImageAfter(int**,int,int,int);
+void printImage(int**,int,int,int,int);
