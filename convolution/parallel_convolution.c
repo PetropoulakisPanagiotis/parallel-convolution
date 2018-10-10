@@ -1,5 +1,5 @@
 /***********************************/
-/* paraller_convolution.h */
+/* paraller_convolution.c */
 /* Editors: Panagiotis Petropoulakis
  *          Andreas Charalampous
  *
