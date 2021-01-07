@@ -9,7 +9,6 @@ Parallel convolution performs n convolutions to an image using MPI and OpenMP fo
 ## How It Works
 The image is partitioned into square blocks and each process is "mapped" to a specific block. At first, each process convolutes only the inner pixels with a given kernel, and then, each process exchanges with its neighbours its outer pixels to perform a convolution to the remaining pixels. This process is repeated n times. 
 
-<br />
 Notes:
 * You can find some plots inside the measurements folder 
 * Filter size = 3*3
