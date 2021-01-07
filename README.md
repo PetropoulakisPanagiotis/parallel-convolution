@@ -7,14 +7,14 @@
 Parallel convolution performs n convolutions to an image using MPI and OpenMP for parallelism
 
 ## How It Works
-Partition image into blocks, so as each process convolutes its own part using a given kernel. In the beginning, all processes convolute the "inner" pixels, and then, the "outer" pixels should be transmited to the neighbros processes. 
+Partition image into blocks, so as each process convolutes its own part using a given kernel. In the beginning, all processes convolute the "inner" pixels, and then, the "outer" pixels should be transmitted to the neighbours processes. 
 <br />
 Notes:
+* You can find some plots that reside inside the measurements folder 
 * Filter = 3*3
-* Given filter can be normalized
 * All processes are workers. Process 0 just sends the user input in the other processes. After that process 0 is a worker. In the end process 0 will print some results.
-* Timers only includes computation and messages(pre/post-procesing is excluded)
-* Max heighbours per proces = 8 
+* Timers only includes computation and messages(pre and post-processing are excluded)
+* Max neighbours per process = 8 
 * The input number of processes must be a perfect square
 
 ## Key Features
