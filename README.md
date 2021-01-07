@@ -33,7 +33,7 @@ Notes:
 ```
 $ cd parallel-convolution/convolution
 $ make
-$ mpiexec -n 4 ./convolution <br />
+$ mpiexec -n 4 ./convolution
 ```
 
 ## Contributing
