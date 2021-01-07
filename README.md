@@ -4,13 +4,13 @@
 <img src="https://i1.wp.com/jeanvitor.com/wp-content/uploads/2017/07/6zX2c.png?w=364&ssl=1">
 </p>
 
-A Random image is generated and then convolution is performed with a given filter. Convolution can be performed many times(based in the user-input)  <br /> 
+Parallel convolution performs n convolutions to an image using MPI and OpenMP for parallelism
 
 ## How It Works
-Type of data partition is block, so every process has it's own portion of the original image. In the beginning, all processes convolute <br /> inner pixels. After that processes should exchange their outer pixels via messages and then perform convolution to outer pixels.
-<br /> 
+Partition image into block, so as each process convolutes its part using a given kernel. In the beginning, all processes convolute the "inner" pixels and then the "outer" pixels should be transmited to the neigbros processes to perform convolution to the "outer" pixels. 
+<br />
 Notes:
-* Filter = 3 X 3 (can not be changed)
+* Filter = 3*3
 * Given filter can be normalized
 * All processes are workers. Process 0 just sends the user input in the other processes. After that process 0 is a worker. In the end process 0 will print some results.
 * Timers only includes computation and messages(pre/post-procesing is excluded)
@@ -28,8 +28,8 @@ Notes:
 * Static scheduling with OpenMp
 
 ## Requirements
-* MPI-3 <br />
-* OpenMp <br />
+* MPI-3 
+* OpenMP
 
 ## Compilation/Run
 1. make
